@@ -3,6 +3,27 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="GuideMe.App">
     <Application.Resources>
-
+        <ResourceDictionary>
+            <Style TargetType="Label">
+                <Setter Property="TextColor" Value="WhiteSmoke" />
+            </Style>
+            <Style x:Key="MainColorBackground" TargetType="ContentPage">
+                <Setter Property="BackgroundColor" Value="#353741" />
+            </Style>
+            <Style x:Key="BluetoothButton" TargetType="Button">
+                <Setter Property="BackgroundColor" Value="#2b3de0"/>
+                <Setter Property="TextColor" Value="Snow"/>
+            </Style>
+            <!--#202126-->
+            <!--#353741-->
+        </ResourceDictionary>
     </Application.Resources>
+    <!--<Application.MainPage>
+        <NavigationPage>
+            <x:Arguments>
+                <views:SplashPage />
+            </x:Arguments>
+        </NavigationPage>
+    </Application.MainPage>-->
 </Application>
+
