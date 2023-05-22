@@ -11,5 +11,6 @@ namespace GuideMe.Interfaces
         bool VerificaSeOBluetoothEstaAtivado();
         Task<PermissionStatus> ObtemPermissao();
         void AbreTelaConfiguracoes();
+        void EscanearOESP32();
     }
 }

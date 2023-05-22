@@ -45,6 +45,20 @@ namespace GuideMe
                     if (decisao)
                     {
                         _bluetoothService.AbreTelaConfiguracoes();
+                        //oBluetoothTaAtivado = _bluetoothService.VerificaSeOBluetoothEstaAtivado();
+                    }
+                }
+
+                else
+                {
+                    try
+                    {
+                        _bluetoothService.EscanearOESP32();
+                    }
+                    
+                    catch (Exception ex)
+                    {
+                        await DisplayAlert("Exceção", "Deu a exceção do Java Security pedindo o bluetooth connection.", "Ok");
                     }
                 }
             }
