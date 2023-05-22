@@ -1,19 +1,32 @@
-﻿using System;
+﻿using Android.App;
+using Android.Content;
+using Android.OS;
+using Android.Runtime;
+using Android.Views;
+using Android.Widget;
+using Android.Bluetooth;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using GuideMe.Interfaces;
+using Xamarin.Forms;
+using GuideMe.Droid;
 using System.Threading.Tasks;
 using Xamarin.Essentials;
 
-namespace GuideMe.Services
+[assembly: Dependency(typeof(AndroidBluetoothService))]
+namespace GuideMe.Droid
 {
-    public class BluetoothService
+    public class AndroidBluetoothService : IAndroidBluetoothService
     {
-        /// <summary>
-        /// Obtém as permissões necessárias para escanear e conectar com dispositivos Bluetooths.
-        /// As duas permissões necessárias são: ACCESS_COARSE_LOCATION e ACCESS_FINE_LOCATION.
-        /// Esse método já busca conseguir essas permissões durante o uso do app.
-        /// </summary>
-        /// <returns></returns>
+        public void AbreTelaConfiguracoes()
+        {
+            Intent intent = new Intent(Android.Provider.Settings.ActionBluetoothSettings);
+            intent.AddFlags(ActivityFlags.NewTask);
+            Android.App.Application.Context.StartActivity(intent);
+        }
+
         public async Task<PermissionStatus> ObtemPermissao()
         {
             PermissionStatus permissionStatus = PermissionStatus.Unknown;
@@ -34,6 +47,12 @@ namespace GuideMe.Services
                 }
             }
             return permissionStatus;
+        }
+
+        public bool VerificaSeOBluetoothEstaAtivado()
+        {
+            BluetoothAdapter adapter = BluetoothAdapter.DefaultAdapter;
+            return adapter?.IsEnabled ?? false;
         }
     }
 }
