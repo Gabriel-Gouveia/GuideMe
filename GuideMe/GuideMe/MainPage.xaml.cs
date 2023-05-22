@@ -26,41 +26,50 @@ namespace GuideMe
         protected override async void OnAppearing()
         {
             base.OnAppearing();
-            
-            PermissaoBLE = await _bluetoothService.ObtemPermissao();
-             
-            // Talkback depois
-            if (PermissaoBLE == PermissionStatus.Denied || PermissaoBLE == PermissionStatus.Disabled)
-                await DisplayAlert("Uso de Bluetooth não autorizado", "Não é possível usar o app sem o Bluetooth.", "Ok");
 
-            else
+            if (_bluetoothService.BluetoothLEEhSuportado())
             {
-                bool oBluetoothTaAtivado = _bluetoothService.VerificaSeOBluetoothEstaAtivado();
+                PermissaoBLE = await _bluetoothService.ObtemPermissao();
 
-                if (!oBluetoothTaAtivado)
-                {
-                    bool decisao = await DisplayAlert("O Bluetooth do dispositivo está desativado", "Para o GuideMe funcionar, é necessário que o Bluetooth esteja ativado." +
-                        "\nDeseja ativar o Bluetooth?", "Yes", "No");
-
-                    if (decisao)
-                    {
-                        _bluetoothService.AbreTelaConfiguracoes();
-                        //oBluetoothTaAtivado = _bluetoothService.VerificaSeOBluetoothEstaAtivado();
-                    }
-                }
+                // Talkback depois
+                if (PermissaoBLE == PermissionStatus.Denied || PermissaoBLE == PermissionStatus.Disabled)
+                    await DisplayAlert("Uso de Bluetooth não autorizado", "Não é possível usar o app sem o Bluetooth.", "Ok");
 
                 else
                 {
-                    try
+                    bool oBluetoothTaAtivado = _bluetoothService.VerificaSeOBluetoothEstaAtivado();
+
+                    if (!oBluetoothTaAtivado)
                     {
-                        _bluetoothService.EscanearOESP32();
+                        bool decisao = await DisplayAlert("O Bluetooth do dispositivo está desativado", "Para o GuideMe funcionar, é necessário que o Bluetooth esteja ativado." +
+                            "\nDeseja ativar o Bluetooth?", "Yes", "No");
+
+                        if (decisao)
+                        {
+                            _bluetoothService.AbreTelaConfiguracoes();
+                            //oBluetoothTaAtivado = _bluetoothService.VerificaSeOBluetoothEstaAtivado();
+                        }
                     }
-                    
-                    catch (Exception ex)
+
+                    else
                     {
-                        await DisplayAlert("Exceção", "Deu a exceção do Java Security pedindo o bluetooth connection.", "Ok");
+                        try
+                        {
+                            /*string dados =*/ _bluetoothService.EscanearOESP32();
+                        }
+
+                        catch (Exception ex)
+                        {
+                            await DisplayAlert("Exceção", "Deu a exceção do Java Security pedindo o bluetooth connection.", "Ok");
+                        }
                     }
                 }
+            }
+
+            else
+            {
+                await DisplayAlert("Bluetooth LE não suportado", "O seu dispositivo não possui suporte ao BluetoothLE.", "Ok");
+                return;
             }
 
             // Perform other tasks after the permission is granted

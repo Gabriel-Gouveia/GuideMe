@@ -12,5 +12,6 @@ namespace GuideMe.Interfaces
         Task<PermissionStatus> ObtemPermissao();
         void AbreTelaConfiguracoes();
         void EscanearOESP32();
+        bool BluetoothLEEhSuportado();
     }
 }
