@@ -9,6 +9,7 @@ using Xamarin.Essentials;
 using GuideMe.Services;
 using System.Diagnostics;
 using GuideMe.Interfaces;
+using Plugin.BLE.Abstractions.Contracts;
 
 namespace GuideMe
 {
@@ -16,6 +17,8 @@ namespace GuideMe
     {
         public PermissionStatus PermissaoBLE { get; set; } = PermissionStatus.Unknown;
         private IAndroidBluetoothService _bluetoothService;
+        IDevice _device;
+
         public MainPage()
         {
             InitializeComponent();
@@ -55,7 +58,7 @@ namespace GuideMe
                     {
                         try
                         {
-                            /*string dados =*/ _bluetoothService.EscanearOESP32();
+                            await Task.Run(PerformaOperacoesBluetooth);
                         }
 
                         catch (Exception ex)
@@ -74,5 +77,20 @@ namespace GuideMe
 
             // Perform other tasks after the permission is granted
         }
+
+        private async Task PerformaOperacoesBluetooth()
+        {
+            List<IDevice> dispositivosEscaneados = await _bluetoothService.EscanearDispositivos();
+            _device = dispositivosEscaneados.FirstOrDefault(d => d.Name == "ESP32-BLE-Server");
+
+            if (_device != null)
+                await _bluetoothService.ConectarAoESP32(_device);
+            else
+            {
+                // Handle the case when the desired device is not found
+                // Display an error message or take appropriate action
+            }
+        }
+
     }
 }

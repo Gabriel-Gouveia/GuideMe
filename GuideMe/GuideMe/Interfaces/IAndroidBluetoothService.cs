@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Plugin.BLE;
+using Plugin.BLE.Abstractions.Contracts;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,7 +13,9 @@ namespace GuideMe.Interfaces
         bool VerificaSeOBluetoothEstaAtivado();
         Task<PermissionStatus> ObtemPermissao();
         void AbreTelaConfiguracoes();
-        void EscanearOESP32();
+        Task<List<IDevice>> EscanearDispositivos();
         bool BluetoothLEEhSuportado();
+        void EscanearDispositivosEConectarAoESP32();
+        Task ConectarAoESP32(IDevice device);
     }
 }

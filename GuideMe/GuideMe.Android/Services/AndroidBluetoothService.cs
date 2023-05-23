@@ -8,6 +8,7 @@ using Android.Bluetooth;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Diagnostics;
 using System.Text;
 using GuideMe.Interfaces;
 using Xamarin.Forms;
@@ -18,6 +19,7 @@ using Plugin.BLE;
 using Android.Content.PM;
 using Plugin.BLE.Abstractions.Contracts;
 using Plugin.BLE.Abstractions;
+using System.Collections.ObjectModel;
 
 [assembly: Dependency(typeof(AndroidBluetoothService))]
 namespace GuideMe.Droid
@@ -26,6 +28,9 @@ namespace GuideMe.Droid
     {
         IBluetoothLE _ble = CrossBluetoothLE.Current;
         Plugin.BLE.Abstractions.Contracts.IAdapter _adapter = CrossBluetoothLE.Current.Adapter;
+        ObservableCollection<IDevice> _deviceList = new ObservableCollection<IDevice>();
+        IDevice _device;
+
         public void AbreTelaConfiguracoes()
         {
             Intent intent = new Intent(Android.Provider.Settings.ActionBluetoothSettings);
@@ -55,46 +60,39 @@ namespace GuideMe.Droid
             return permissionStatus;
         }
 
-        public async void EscanearOESP32()
+        public async void EscanearDispositivosEConectarAoESP32()
         {
-            //try
-            //{
-            //    List<IDevice> deviceList = new List<IDevice>();
+            List<IDevice> dispositivosEscaneados = await EscanearDispositivos();
+            _device = dispositivosEscaneados.FirstOrDefault(d => d.Name == "ESP32-BLE-Server");
 
-            //    // Start scanning for devices
-            //    await _adapter.StartScanningForDevicesAsync();
+            if (_device != null)
+                await ConectarAoESP32(_device);
+            else
+            {
+                // Handle the case when the desired device is not found
+                // Display an error message or take appropriate action
+            }
+        }
 
-            //    _adapter.DeviceDiscovered += (s, a) =>
-            //    {
-            //        // Add discovered devices to the list
-            //        deviceList.Add(a.Device);
-
-            //        // Check if the discovered device matches your criteria
-            //        if (a.Device.Name == "ESP32-BLE-Server")
-            //        {
-            //            // Connect to the device
-            //            ConectarAoESP32(a.Device);
-            //        }
-            //    };                
-            //}
-            //catch (Exception ex)
-            //{
-            //    throw ex;
-            //}
+        public async Task<List<IDevice>> EscanearDispositivos()
+        {
+            _deviceList.Clear();
             try
             {
-                List<IDevice> deviceList = new List<IDevice>();
-                //_adapter.ScanMode = Plugin.BLE.Abstractions.Contracts.ScanMode.LowPower;
-                //var scanFilterOptions = new ScanFilterOptions();
-                //scanFilterOptions.ServiceUuids = new[] { new Guid("4FAFC201-1FB5-459E-8FCC-C5C9C331914B") }; // cross platform filter
-                //scanFilterOptions.ManufacturerDataFilters = new[] { new ManufacturerDataFilter(1), new ManufacturerDataFilter(2) }; // android only filter
-                //scanFilterOptions.DeviceAddresses = new[] { "80:6F:B0:43:8D:3B", "80:6F:B0:25:C3:15", etc }; // android only filter
-                //await _adapter.StartScanningForDevicesAsync(scanFilterOptions);
-                await _adapter.StartScanningForDevicesAsync();
-               // _adapter.DeviceDiscovered += (s, a) => deviceList.Add(a.Device);
-                deviceList = (List<IDevice>)_adapter.DiscoveredDevices;
-                IDevice wishedDevice = deviceList.Where(d => d.Name == "ESP32-BLE-Server").First();
-                await ConectarAoESP32(wishedDevice);
+                _adapter.ScanTimeout = 60000;
+                _adapter.DeviceDiscovered += (s, a) =>
+                {
+                    System.Diagnostics.Debug.WriteLine("Device discovered: " + a.Device.Name);
+                    _deviceList.Add(a.Device);
+                };
+
+                if (!_ble.Adapter.IsScanning && _ble.State == BluetoothState.On)
+                {
+                    await _adapter.StartScanningForDevicesAsync();
+                    await Task.Delay(2000);
+                }
+
+                return _deviceList.ToList();
             }
             catch (Exception ex)
             {
@@ -106,22 +104,23 @@ namespace GuideMe.Droid
         {
             try
             {
-                await _adapter.StopScanningForDevicesAsync(); // Stop scanning before connecting to a device
+                //await _adapter.StopScanningForDevicesAsync(); // Stop scanning before connecting to a device
 
                 // Connect to the device
                 await _adapter.ConnectToDeviceAsync(device);
                 var connectedDevice = _adapter.ConnectedDevices.FirstOrDefault();
                 var service = await connectedDevice.GetServiceAsync(Guid.Parse("4FAFC201-1FB5-459E-8FCC-C5C9C331914B"));
                 var characteristic = await service.GetCharacteristicAsync(Guid.Parse("BEB5483E-36E1-4688-B7F5-EA07361B26A8"));
-                var bytes =  await characteristic.ReadAsync();
+                var bytes = await characteristic.ReadAsync();
 
                 string valorLidoCaracteristica = bytes.ToString();
+
 
                 // Perform further operations with the connected device
                 // For example, you can discover services and characteristics, read/write values, etc.
 
                 // After you finish working with the device, you can disconnect it
-                
+
             }
             catch (Exception ex)
             {
@@ -141,6 +140,7 @@ namespace GuideMe.Droid
             PackageManager packageManager = Android.App.Application.Context.PackageManager;
             return packageManager.HasSystemFeature(PackageManager.FeatureBluetoothLe);
         }
+
 
 
 
