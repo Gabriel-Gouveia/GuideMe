@@ -13,7 +13,7 @@ namespace GuideMe.Interfaces
         bool VerificaSeOBluetoothEstaAtivado();
         Task<PermissionStatus> ObtemPermissaoLocalizacao();
         void AbreTelaConfiguracoes();
-        Task<List<IDevice>> EscanearDispositivos();
+        void EscanearDispositivos();
         bool BluetoothLEEhSuportado();
         void EscanearDispositivosEConectarAoESP32();
         Task ConectarAoESP32(IDevice device);

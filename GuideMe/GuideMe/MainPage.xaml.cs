@@ -63,7 +63,7 @@ namespace GuideMe
                     {
                         try
                         {
-                            await Task.Run(PerformaOperacoesBluetooth);
+                            await Task.Run(_bluetoothService.EscanearDispositivosEConectarAoESP32);
                         }
 
                         catch (Exception ex)
@@ -82,20 +82,5 @@ namespace GuideMe
 
             // Perform other tasks after the permission is granted
         }
-
-        private async Task PerformaOperacoesBluetooth()
-        {
-            List<IDevice> dispositivosEscaneados = await _bluetoothService.EscanearDispositivos();
-            _device = dispositivosEscaneados.FirstOrDefault(d => d.Name == "ESP32-BLE-Server");
-
-            if (_device != null)
-                await _bluetoothService.ConectarAoESP32(_device);
-            else
-            {
-                // Handle the case when the desired device is not found
-                // Display an error message or take appropriate action
-            }
-        }
-
     }
 }
