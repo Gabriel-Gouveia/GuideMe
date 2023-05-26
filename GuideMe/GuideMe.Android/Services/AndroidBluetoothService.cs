@@ -38,7 +38,11 @@ namespace GuideMe.Droid
             Android.App.Application.Context.StartActivity(intent);
         }
 
-        public async Task<PermissionStatus> ObtemPermissao()
+        /// <summary>
+        /// Permissao necessaria para dispositivos Android 11 ou mais antigos.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<PermissionStatus> ObtemPermissaoLocalizacao()
         {
             PermissionStatus permissionStatus = PermissionStatus.Unknown;
             if (DeviceInfo.Platform == DevicePlatform.Android)
@@ -47,6 +51,32 @@ namespace GuideMe.Droid
                 if (permissionStatus != PermissionStatus.Granted)
                 {
                     permissionStatus = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
+                    if (permissionStatus != PermissionStatus.Granted)
+                    {
+                        permissionStatus = PermissionStatus.Denied; // Permission denied
+                    }
+                    else
+                    {
+                        permissionStatus = PermissionStatus.Granted;
+                    }
+                }
+            }
+            return permissionStatus;
+        }
+
+        /// <summary>
+        /// Permissao necessaria para dispositvos Android 12 ou mais novos.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<PermissionStatus> ObtemPermissaoBluetoothLE()
+        {
+            PermissionStatus permissionStatus = PermissionStatus.Unknown;
+            if (DeviceInfo.Platform == DevicePlatform.Android)
+            {
+                permissionStatus = await Permissions.CheckStatusAsync<BLEPermission>();
+                if (permissionStatus != PermissionStatus.Granted)
+                {
+                    permissionStatus = await Permissions.RequestAsync<BLEPermission>();
                     if (permissionStatus != PermissionStatus.Granted)
                     {
                         permissionStatus = PermissionStatus.Denied; // Permission denied
@@ -141,7 +171,10 @@ namespace GuideMe.Droid
             return packageManager.HasSystemFeature(PackageManager.FeatureBluetoothLe);
         }
 
-
+        public string ObterVersaoDoAndroid()
+        {
+            return Build.VERSION.Release;
+        }
 
 
 

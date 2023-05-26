@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.33027.164
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GuideMe.Android", "GuideMe\GuideMe.Android\GuideMe.Android.csproj", "{8C250457-CD93-4C9F-9A57-18002B7F41D6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GuideMe.iOS", "GuideMe\GuideMe.iOS\GuideMe.iOS.csproj", "{3E24C139-0C92-419A-A008-5040D50D3560}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GuideMe", "GuideMe\GuideMe\GuideMe.csproj", "{554302C2-D859-4AC6-BA85-4EAA67341B36}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GuideMe", "GuideMe\GuideMe\GuideMe.csproj", "{554302C2-D859-4AC6-BA85-4EAA67341B36}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

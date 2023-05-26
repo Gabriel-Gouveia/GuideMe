@@ -16,14 +16,17 @@ namespace GuideMe
     public partial class MainPage : ContentPage
     {
         public PermissionStatus PermissaoBLE { get; set; } = PermissionStatus.Unknown;
+        public PermissionStatus PermissaoBLEAndroid12 { get; set; } = PermissionStatus.Unknown;
         private IAndroidBluetoothService _bluetoothService;
         IDevice _device;
+        private string _versaoDoAndroid;
 
         public MainPage()
         {
             InitializeComponent();
             BindingContext = this;
             _bluetoothService = DependencyService.Get<IAndroidBluetoothService>();
+            _versaoDoAndroid = _bluetoothService.ObterVersaoDoAndroid();
         }
 
         protected override async void OnAppearing()
@@ -32,7 +35,9 @@ namespace GuideMe
 
             if (_bluetoothService.BluetoothLEEhSuportado())
             {
-                PermissaoBLE = await _bluetoothService.ObtemPermissao();
+                PermissaoBLE = await _bluetoothService.ObtemPermissaoLocalizacao();
+
+                
 
                 // Talkback depois
                 if (PermissaoBLE == PermissionStatus.Denied || PermissaoBLE == PermissionStatus.Disabled)
