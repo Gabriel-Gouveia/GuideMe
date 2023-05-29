@@ -37,7 +37,16 @@ namespace GuideMe
             {
                 PermissaoBLE = await _bluetoothService.ObtemPermissaoLocalizacao();
 
-                
+                if (Convert.ToInt32(_versaoDoAndroid) >= 12)
+                {
+                    PermissaoBLEAndroid12 = await _bluetoothService.ObtemPermissaoBluetoothLE();
+
+                    if (PermissaoBLEAndroid12 == PermissionStatus.Denied || PermissaoBLEAndroid12 == PermissionStatus.Disabled)
+                    {
+                        await DisplayAlert("Uso de Bluetooth não autorizado", "Não é possível usar o app sem o Bluetooth.", "Ok");
+                        return;
+                    }
+                }
 
                 // Talkback depois
                 if (PermissaoBLE == PermissionStatus.Denied || PermissaoBLE == PermissionStatus.Disabled)

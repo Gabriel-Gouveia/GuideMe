@@ -106,7 +106,7 @@ namespace GuideMe.Droid
 
         public async void EscanearDispositivosEConectarAoESP32()
         {
-            EscanearDispositivos();
+            List<IDevice> scannedDevices = await EscanearDispositivosAsync();
             _device = _dispositivosEscaneados.FirstOrDefault(d => d.Name == "ESP32-BLE-Server");
 
             if (_device != null)
@@ -119,17 +119,26 @@ namespace GuideMe.Droid
             }
         }
 
-        public async void EscanearDispositivos()
+        public async Task<List<IDevice>> EscanearDispositivosAsync()
         {
             try
             {
                 _dispositivosEscaneados.Clear();
+                List<IDevice> dispositivos = new List<IDevice>();
 
                 if (!_bluetoothAdapter.IsScanning)
-                    await _bluetoothAdapter.StartScanningForDevicesAsync();
+                {                    
+                    Task scanningTask = _bluetoothAdapter.StartScanningForDevicesAsync();
+                    await scanningTask;
+                    await _bluetoothAdapter.StopScanningForDevicesAsync();
+                    
+                    foreach (IDevice dispositivo in _dispositivosEscaneados)
+                    {
+                        dispositivos.Add(dispositivo);
+                    }
+                }
 
-                foreach (var dispositivo in _bluetoothAdapter.ConnectedDevices)
-                    _dispositivosEscaneados.Add(dispositivo);
+                return dispositivos;
             }
             catch (Exception ex)
             {
