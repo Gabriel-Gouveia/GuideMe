@@ -163,9 +163,9 @@ namespace GuideMe
         {
             _caracteristicaUsada.ValueUpdated += (o, args) =>
             {
-
+                var data = Encoding.UTF8.GetString(args.Characteristic.Value, 0, args.Characteristic.Value.Length);
             };
-
+            
             await _caracteristicaUsada.StartUpdatesAsync();
         }
     }
