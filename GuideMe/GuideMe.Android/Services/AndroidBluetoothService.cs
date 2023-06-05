@@ -20,6 +20,7 @@ using Android.Content.PM;
 using Plugin.BLE.Abstractions.Contracts;
 using Plugin.BLE.Abstractions;
 using System.Collections.ObjectModel;
+using Plugin.BLE.Abstractions.Exceptions;
 
 [assembly: Dependency(typeof(AndroidBluetoothService))]
 namespace GuideMe.Droid
@@ -60,10 +61,10 @@ namespace GuideMe.Droid
                 if (permissionStatus != PermissionStatus.Granted)
                 {
                     permissionStatus = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
+
                     if (permissionStatus != PermissionStatus.Granted)
-                    {
-                        permissionStatus = PermissionStatus.Denied; // Permission denied
-                    }
+                        permissionStatus = PermissionStatus.Denied;
+
                     else
                     {
                         permissionStatus = PermissionStatus.Granted;
@@ -86,10 +87,10 @@ namespace GuideMe.Droid
                 if (permissionStatus != PermissionStatus.Granted)
                 {
                     permissionStatus = await Permissions.RequestAsync<BLEPermission>();
+
                     if (permissionStatus != PermissionStatus.Granted)
-                    {
-                        permissionStatus = PermissionStatus.Denied; // Permission denied
-                    }
+                        permissionStatus = PermissionStatus.Denied;
+
                     else
                     {
                         permissionStatus = PermissionStatus.Granted;
@@ -99,18 +100,19 @@ namespace GuideMe.Droid
             return permissionStatus;
         }
 
-        public async void EscanearDispositivosEConectarAoESP32()
+        public async Task<IDevice> EscanearDispositivosEConectarAoESP32Async()
         {
             List<IDevice> scannedDevices = await EscanearDispositivosAsync();
             _device = _dispositivosEscaneados.FirstOrDefault(d => d.Name == "ESP32-BLE-Server");
 
             if (_device != null)
-                await ConectarAoESP32(_device);
+               return  await ConectarAoESP32Async(_device);
 
             else
             {
                 // Handle the case when the desired device is not found
                 // Display an error message or take appropriate action
+                return null;
             }
         }
 
@@ -122,11 +124,11 @@ namespace GuideMe.Droid
                 List<IDevice> dispositivos = new List<IDevice>();
 
                 if (!_bluetoothAdapter.IsScanning)
-                {                    
+                {
                     Task scanningTask = _bluetoothAdapter.StartScanningForDevicesAsync();
                     await scanningTask;
                     await _bluetoothAdapter.StopScanningForDevicesAsync();
-                    
+
                     foreach (IDevice dispositivo in _dispositivosEscaneados)
                     {
                         dispositivos.Add(dispositivo);
@@ -135,13 +137,17 @@ namespace GuideMe.Droid
 
                 return dispositivos;
             }
+            catch (DeviceDiscoverException ex)
+            {
+                throw ex;
+            }
             catch (Exception ex)
             {
                 throw ex;
             }
         }
 
-        public async Task ConectarAoESP32(IDevice device)
+        public async Task<IDevice> ConectarAoESP32Async(IDevice device)
         {
             try
             {
@@ -151,19 +157,20 @@ namespace GuideMe.Droid
                 if (device != null)
                 {
                     if (device.State == DeviceState.Connected)
-                        return;
+                        return device;
 
                     else
                     {
                         var parametrosDeConexao = new ConnectParameters(false, true);
                         await _bluetoothAdapter.ConnectToDeviceAsync(device, parametrosDeConexao);
-                        var connectedDevice = _bluetoothAdapter.ConnectedDevices.FirstOrDefault();
+                        return _bluetoothAdapter.ConnectedDevices.FirstOrDefault();
+                        //var connectedDevice = _bluetoothAdapter.ConnectedDevices.FirstOrDefault();
                         //var connectedDevice = _bluetoothAdapter.ConnectedDevices.Where(d => d.Name == "ESP32-BLE-Server"); <-- alternativa
-                        var service = await connectedDevice.GetServiceAsync(Guid.Parse("4FAFC201-1FB5-459E-8FCC-C5C9C331914B"));
-                        var characteristic = await service.GetCharacteristicAsync(Guid.Parse("BEB5483E-36E1-4688-B7F5-EA07361B26A8"));
-                        var bytes = await characteristic.ReadAsync();
+                        //var service = await connectedDevice.GetServiceAsync(Guid.Parse("4FAFC201-1FB5-459E-8FCC-C5C9C331914B"));
+                        //var characteristic = await service.GetCharacteristicAsync(Guid.Parse("BEB5483E-36E1-4688-B7F5-EA07361B26A8"));
+                        //var bytes = await characteristic.ReadAsync();
 
-                        string valorLidoCaracteristica = bytes.ToString();
+                        //string valorLidoCaracteristica = bytes.ToString();
 
 
                         // Perform further operations with the connected device
@@ -172,6 +179,15 @@ namespace GuideMe.Droid
                         // After you finish working with the device, you can disconnect it
                     }
                 }
+                return null;
+            }
+            catch (DeviceConnectionException ex)
+            {
+                throw ex;
+            }
+            catch (CharacteristicReadException ex)
+            {
+                throw ex;
             }
             catch (Exception ex)
             {
@@ -179,6 +195,43 @@ namespace GuideMe.Droid
             }
         }
 
+        private async Task<IService> ObtemServicoBLEAsync(IDevice dispositivoConectado)
+        {
+            if (dispositivoConectado.Name == "ESP32-BLE-Server" && dispositivoConectado.State == DeviceState.Connected)
+                return await _device.GetServiceAsync(Guid.Parse("4FAFC201-1FB5-459E-8FCC-C5C9C331914B"));
+
+            return null;
+        }
+
+        private async Task<ICharacteristic> LeCaracteristicaAsync(IDevice dispositivoConectado)
+        {
+            IService service = await ObtemServicoBLEAsync(dispositivoConectado);
+
+            if (service != null)
+                return await service.GetCharacteristicAsync(Guid.Parse("BEB5483E-36E1-4688-B7F5-EA07361B26A8"));
+
+            return null;
+        }
+
+        public async Task<byte[]> LeDadosRFIDAsync(IDevice dispositivoConectado)
+        {
+            try
+            {
+                ICharacteristic characteristic = await LeCaracteristicaAsync(dispositivoConectado);
+
+                if (characteristic != null)
+                {
+                    var dados = await characteristic.ReadAsync();
+                }
+
+                return null;
+            }
+
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
 
         public bool VerificaSeOBluetoothEstaAtivado()
         {
@@ -195,6 +248,33 @@ namespace GuideMe.Droid
         public string ObterVersaoDoAndroid()
         {
             return Build.VERSION.Release;
+        }
+
+        public async void ReiniciarOAppAposFalha()
+        {
+            // Inside the method where you handle the "Ok" button tap
+            if (await Xamarin.Forms.Application.Current.MainPage.DisplayAlert("Erro", "Ocorreu um erro desconhecido." +
+                "\nPor favor, reinicie o app.", "Ok", "Cancel"))
+            {
+                // Restart the app
+                if (Build.VERSION.SdkInt >= BuildVersionCodes.Lollipop)
+                {
+                    var packageManager = Android.App.Application.Context.PackageManager;
+                    var intent = packageManager.GetLaunchIntentForPackage(Android.App.Application.Context.PackageName);
+                    intent.AddFlags(ActivityFlags.ClearTop);
+                    intent.AddFlags(ActivityFlags.NewTask);
+                    Android.App.Application.Context.StartActivity(intent);
+                    System.Diagnostics.Process.GetCurrentProcess().Kill();
+                }
+                else
+                {
+                    var intent = Android.App.Application.Context.PackageManager.GetLaunchIntentForPackage(Android.App.Application.Context.PackageName);
+                    intent.AddFlags(ActivityFlags.ClearTop);
+                    intent.AddFlags(ActivityFlags.NewTask);
+                    Android.App.Application.Context.StartActivity(intent);
+                    System.Diagnostics.Process.GetCurrentProcess().Kill();
+                }
+            }
         }
     }
 }

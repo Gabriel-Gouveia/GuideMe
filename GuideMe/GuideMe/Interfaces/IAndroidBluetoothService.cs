@@ -15,9 +15,11 @@ namespace GuideMe.Interfaces
         void AbreTelaConfiguracoes();
         Task<List<IDevice>> EscanearDispositivosAsync();
         bool BluetoothLEEhSuportado();
-        void EscanearDispositivosEConectarAoESP32();
-        Task ConectarAoESP32(IDevice device);
+        Task<IDevice> EscanearDispositivosEConectarAoESP32Async();
+        Task<IDevice> ConectarAoESP32Async(IDevice device);
         string ObterVersaoDoAndroid();
         Task<PermissionStatus> ObtemPermissaoBluetoothLE();
+        void ReiniciarOAppAposFalha();
+        Task<byte[]> LeDadosRFIDAsync(IDevice dispositivoConectado);
     }
 }
