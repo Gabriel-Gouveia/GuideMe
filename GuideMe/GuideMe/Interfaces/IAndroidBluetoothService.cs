@@ -21,5 +21,8 @@ namespace GuideMe.Interfaces
         Task<PermissionStatus> ObtemPermissaoBluetoothLE();
         void ReiniciarOAppAposFalha();
         Task<byte[]> LeDadosRFIDAsync(IDevice dispositivoConectado);
+        Task<List<ICharacteristic>> ObterListaDeCaracteristicas(IService servicoUtilizado);
+        Task<ICharacteristic> ObterCaracteristicaUtilizada(Guid UuidCaracteristica, IService servicoUtilizado);
+        Task<IService> ObterServicoUtilizado(Guid UuidServico, IDevice dispositivoConectado);
     }
 }

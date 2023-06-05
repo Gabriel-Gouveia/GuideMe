@@ -277,5 +277,38 @@ namespace GuideMe.Droid
                 }
             }
         }
+
+        public async Task<IService> ObterServicoUtilizado(Guid UuidServico, IDevice dispositivoConectado)
+        {
+            if (dispositivoConectado != null && dispositivoConectado.State == DeviceState.Connected)
+                return await dispositivoConectado.GetServiceAsync(UuidServico);
+
+            return null;
+        }
+
+        public async Task<ICharacteristic> ObterCaracteristicaUtilizada(Guid UuidCaracteristica, IService servicoUtilizado)
+        {
+            if (servicoUtilizado != null)
+                return await servicoUtilizado.GetCharacteristicAsync(UuidCaracteristica);
+
+            return null;
+        }
+
+        public async Task<List<ICharacteristic>> ObterListaDeCaracteristicas(IService servicoUtilizado)
+        {
+            if (servicoUtilizado != null)
+            {
+                var listaCaracteristicasReadOnly = await servicoUtilizado.GetCharacteristicsAsync();
+
+                List<ICharacteristic> listaCaracteristicas =  new List<ICharacteristic>();
+
+                foreach (var caracteristica in listaCaracteristicasReadOnly)
+                {
+                    listaCaracteristicas.Add(caracteristica);
+                }
+            }
+
+            return null;
+        }
     }
 }

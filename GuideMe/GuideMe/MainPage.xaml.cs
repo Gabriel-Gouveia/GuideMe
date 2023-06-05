@@ -18,7 +18,11 @@ namespace GuideMe
         public PermissionStatus PermissaoBLE { get; set; } = PermissionStatus.Unknown;
         public PermissionStatus PermissaoBLEAndroid12 { get; set; } = PermissionStatus.Unknown;
         private IAndroidBluetoothService _bluetoothService;
-        IDevice _dispositivoConectado;
+        private IDevice _dispositivoConectado;
+        private IService _servicoUtilizado;
+        private List<ICharacteristic> _caracteristicas = new List<ICharacteristic>();
+        private ICharacteristic _caracteristicaUsada;
+
         private string _versaoDoAndroid;
 
         public MainPage()
@@ -27,6 +31,7 @@ namespace GuideMe
             BindingContext = this;
             _bluetoothService = DependencyService.Get<IAndroidBluetoothService>();
             _versaoDoAndroid = _bluetoothService.ObterVersaoDoAndroid();
+            _caracteristicaUsada = null;
         }
 
         protected override void OnAppearing()
@@ -106,41 +111,62 @@ namespace GuideMe
 
             else
             {
-                bool oBluetoothTaAtivado = _bluetoothService.VerificaSeOBluetoothEstaAtivado();
+                EscanearEConectarAoESP32();
+            }
+        }
 
-                if (!oBluetoothTaAtivado)
+        private async void EscanearEConectarAoESP32()
+        {
+            bool oBluetoothTaAtivado = _bluetoothService.VerificaSeOBluetoothEstaAtivado();
+
+            if (!oBluetoothTaAtivado)
+            {
+                bool decisao = await DisplayAlert("O Bluetooth do dispositivo está desativado", "Para o GuideMe funcionar, é necessário que o Bluetooth esteja ativado." +
+                    "\nDeseja ativar o Bluetooth?", "Yes", "No");
+
+                if (decisao)
+                    _bluetoothService.AbreTelaConfiguracoes();
+            }
+
+            else
+            {
+                try
                 {
-                    bool decisao = await DisplayAlert("O Bluetooth do dispositivo está desativado", "Para o GuideMe funcionar, é necessário que o Bluetooth esteja ativado." +
-                        "\nDeseja ativar o Bluetooth?", "Yes", "No");
+                    _dispositivoConectado = await _bluetoothService.EscanearDispositivosEConectarAoESP32Async();
+                    
+                    if (_dispositivoConectado == null)
+                    {
+                        await DisplayAlert("Erro ao conectar ao ESP32", "Tente conectar ao ESP32 novamente.", "Ok");
+                        return;
+                    }
 
-                    if (decisao)
-                        _bluetoothService.AbreTelaConfiguracoes();
+                    _servicoUtilizado = await _bluetoothService.ObterServicoUtilizado(Guid.Parse("4FAFC201-1FB5-459E-8FCC-C5C9C331914B"), _dispositivoConectado);
+                    _caracteristicaUsada = await _bluetoothService.ObterCaracteristicaUtilizada(Guid.Parse("BEB5483E-36E1-4688-B7F5-EA07361B26A8"), _servicoUtilizado);
+                    _caracteristicas = await _bluetoothService.ObterListaDeCaracteristicas(_servicoUtilizado);
+                    ConfiguraOEventoValueUpdatedDaCaracteristica();
+
+                    //else
+                    //{
+                        //byte[] dadoRFID = await _bluetoothService.LeDadosRFIDAsync(_dispositivoConectado);
+                        //string abc = Encoding.UTF8.GetString(dadoRFID);
+                    //}
                 }
 
-                else
+                catch (Exception ex)
                 {
-                    try
-                    {
-                        _dispositivoConectado = await /*Task.Run(*/_bluetoothService.EscanearDispositivosEConectarAoESP32Async();/*)*/
-
-                        if (_dispositivoConectado == null)
-                        {
-
-                        }
-
-                        else
-                        {
-                            byte[] dadoRFID = await _bluetoothService.LeDadosRFIDAsync(_dispositivoConectado);
-                            string abc = Encoding.UTF8.GetString(dadoRFID);
-                        }
-                    }
-
-                    catch (Exception ex)
-                    {
-                        await DisplayAlert("Exceção", "Deu a exceção do Java Security pedindo o bluetooth connection.", "Ok");
-                    }
+                    await DisplayAlert("Exceção", "Deu a exceção do Java Security pedindo o bluetooth connection.", "Ok");
                 }
             }
+        }
+
+        private async void ConfiguraOEventoValueUpdatedDaCaracteristica()
+        {
+            _caracteristicaUsada.ValueUpdated += (o, args) =>
+            {
+
+            };
+
+            await _caracteristicaUsada.StartUpdatesAsync();
         }
     }
 }
