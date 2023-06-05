@@ -222,6 +222,7 @@ namespace GuideMe.Droid
                 if (characteristic != null)
                 {
                     var dados = await characteristic.ReadAsync();
+                    return dados;
                 }
 
                 return null;

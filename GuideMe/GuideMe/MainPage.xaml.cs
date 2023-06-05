@@ -18,7 +18,7 @@ namespace GuideMe
         public PermissionStatus PermissaoBLE { get; set; } = PermissionStatus.Unknown;
         public PermissionStatus PermissaoBLEAndroid12 { get; set; } = PermissionStatus.Unknown;
         private IAndroidBluetoothService _bluetoothService;
-        IDevice _device;
+        IDevice _dispositivoConectado;
         private string _versaoDoAndroid;
 
         public MainPage()
@@ -121,10 +121,18 @@ namespace GuideMe
                 {
                     try
                     {
-                        IDevice dispositivoConectado = await /*Task.Run(*/_bluetoothService.EscanearDispositivosEConectarAoESP32Async();/*)*/
-                        byte[] dadoRFID = await _bluetoothService.LeDadosRFIDAsync(dispositivoConectado);
-                        string abc = Encoding.UTF8.GetString(dadoRFID);
-                        Debugger.Log(1, "a", "Executada a linha 127");
+                        _dispositivoConectado = await /*Task.Run(*/_bluetoothService.EscanearDispositivosEConectarAoESP32Async();/*)*/
+
+                        if (_dispositivoConectado == null)
+                        {
+
+                        }
+
+                        else
+                        {
+                            byte[] dadoRFID = await _bluetoothService.LeDadosRFIDAsync(_dispositivoConectado);
+                            string abc = Encoding.UTF8.GetString(dadoRFID);
+                        }
                     }
 
                     catch (Exception ex)
