@@ -10,20 +10,26 @@ using GuideMe.Services;
 using System.Diagnostics;
 using GuideMe.Interfaces;
 using Plugin.BLE.Abstractions.Contracts;
+using System.Collections.ObjectModel;
+using GuideMe.DAO;
+using System.Threading;
 
 namespace GuideMe
 {
     public partial class MainPage : ContentPage
     {
+        private bool varTeste = false;
         public PermissionStatus PermissaoBLE { get; set; } = PermissionStatus.Unknown;
         public PermissionStatus PermissaoBLEAndroid12 { get; set; } = PermissionStatus.Unknown;
         private IAndroidBluetoothService _bluetoothService;
         IDevice _device;
         private string _versaoDoAndroid;
 
+        private bool _threadLeituraTag = false;
+
         public MainPage()
         {
-            InitializeComponent();
+            InitializeComponent();          
             BindingContext = this;
             _bluetoothService = DependencyService.Get<IAndroidBluetoothService>();
             _versaoDoAndroid = _bluetoothService.ObterVersaoDoAndroid();
@@ -117,14 +123,21 @@ namespace GuideMe
                         _bluetoothService.AbreTelaConfiguracoes();
                 }
 
-                else
+                else if(!string.IsNullOrEmpty(StorageDAO.NomeBengalaBluetooth) && !_threadLeituraTag)
                 {
                     try
                     {
-                        IDevice dispositivoConectado = await /*Task.Run(*/_bluetoothService.EscanearDispositivosEConectarAoESP32Async();/*)*/
-                        byte[] dadoRFID = await _bluetoothService.LeDadosRFIDAsync(dispositivoConectado);
-                        string abc = Encoding.UTF8.GetString(dadoRFID);
-                        Debugger.Log(1, "a", "Executada a linha 127");
+                        _device = await /*Task.Run(*/_bluetoothService.EscanearDispositivosEConectarAoESP32Async(StorageDAO.NomeBengalaBluetooth);/*)*/
+                        if (_device != null)
+                        {
+                            _threadLeituraTag = true;
+                            await DisplayAlert("Aviso", "bengala conectada com sucesso!", "Ok");
+                            _ = Task.Factory.StartNew(_ => LeituraTagsBengala(), TaskCreationOptions.LongRunning);
+                            
+                        }
+                        else
+                            await DisplayAlert("Aviso", "Não foi possível conectar com a bengala", "Ok");
+
                     }
 
                     catch (Exception ex)
@@ -133,6 +146,32 @@ namespace GuideMe
                     }
                 }
             }
+        }
+
+        private async void LeituraTagsBengala()
+        {
+            try
+            {
+                while (_threadLeituraTag && _device!=null)
+                {
+                    byte[] dadoRFID = await _bluetoothService.LeDadosRFIDAsync(_device);
+                    /*
+                     * byte[] dadoRFID = await _bluetoothService.LeDadosRFIDAsync(dispositivoConectado);
+                            string abc = Encoding.UTF8.GetString(dadoRFID);
+                            Debugger.Log(1, "a", "Executada a linha 127");
+                     */
+                    Thread.Sleep(100);
+                }
+            }
+            catch (Exception err)
+            { 
+            }
+        }
+      
+
+        private async void btn_escanearBluetooth_Clicked(object sender, EventArgs e)
+        {
+            await Navigation.PushAsync(new DispositivosBluetooth(_bluetoothService));
         }
     }
 }

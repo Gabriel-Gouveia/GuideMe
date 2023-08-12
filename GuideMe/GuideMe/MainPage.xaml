@@ -24,6 +24,14 @@
                 CornerRadius="20"
                 BackgroundColor="#0c0c0d"
                 TextColor="White"></Button>
+        <Button Text="Escanear dispositivos"
+                x:Name="btn_escanearBluetooth"
+                FontSize="25" 
+                Margin="30,0,30,0" 
+                CornerRadius="20"
+                BackgroundColor="#0c0c0d"
+                Clicked="btn_escanearBluetooth_Clicked"
+                TextColor="White"></Button>
     </StackLayout>
     
 
