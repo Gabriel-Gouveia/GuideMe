@@ -147,7 +147,29 @@ namespace GuideMe
                 }
             }
         }
+        public static string ConvertHex(string hexString)
+        {
+            try
+            {
+                string ascii = string.Empty;
 
+                for (int i = 0; i < hexString.Length; i += 2)
+                {
+                    String hs = string.Empty;
+
+                    hs = hexString.Substring(i, 2);
+                    uint decval = System.Convert.ToUInt32(hs, 16);
+                    char character = System.Convert.ToChar(decval);
+                    ascii += character;
+
+                }
+
+                return ascii;
+            }
+            catch (Exception ex) { Console.WriteLine(ex.Message); }
+
+            return string.Empty;
+        }
         private async void LeituraTagsBengala()
         {
             try
@@ -155,6 +177,40 @@ namespace GuideMe
                 while (_threadLeituraTag && _device!=null)
                 {
                     byte[] dadoRFID = await _bluetoothService.LeDadosRFIDAsync(_device);
+
+                    if (dadoRFID != null)
+                    {
+                        string leitura = "";
+                        foreach (byte b in dadoRFID)
+                            leitura += ((char)b).ToString();
+
+                        string[] tokens = leitura.Split(' ');
+                        leitura = "";
+                        foreach (string s in tokens)
+                        {
+                            string aux = s;
+
+                            if (aux.Length == 1)
+                                aux = "0" + s;
+
+                            leitura += aux+" ";
+                        }
+
+
+                        //leitura = ConvertHex(leitura);
+
+                        //leitura = System.Text.Encoding.ASCII.GetString(dadoRFID);
+
+                        leitura = leitura.ToUpper().Trim();
+                        ParserAntena.ParseData(leitura);
+                    }
+
+                    
+
+                    /*string comando = "BB 01 FF 00 01 15 16 7E";
+                    var frame = ParserAntena.ParseData(comando);*/
+
+
                     /*
                      * byte[] dadoRFID = await _bluetoothService.LeDadosRFIDAsync(dispositivoConectado);
                             string abc = Encoding.UTF8.GetString(dadoRFID);
