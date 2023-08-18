@@ -1,18 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Xamarin.Forms;
+﻿using Xamarin.Forms;
 using Xamarin.Essentials;
-using GuideMe.Services;
-using System.Diagnostics;
 using GuideMe.Interfaces;
 using Plugin.BLE.Abstractions.Contracts;
-using System.Collections.ObjectModel;
 using GuideMe.DAO;
+using System;
+using System.Threading.Tasks;
 using System.Threading;
+using Xamarin.CommunityToolkit.Extensions;
+using System.Collections.Generic;
 
 namespace GuideMe
 {
@@ -131,6 +126,7 @@ namespace GuideMe
                         if (_device != null)
                         {
                             _threadLeituraTag = true;
+                            await this.DisplayToastAsync("bengala conectada com sucesso!", 5000);
                             await DisplayAlert("Aviso", "bengala conectada com sucesso!", "Ok");
                             _ = Task.Factory.StartNew(_ => LeituraTagsBengala(), TaskCreationOptions.LongRunning);
                             
@@ -172,6 +168,7 @@ namespace GuideMe
         }
         private async void LeituraTagsBengala()
         {
+            FrameLeituraTag frame = null;
             try
             {
                 while (_threadLeituraTag && _device!=null)
@@ -195,32 +192,37 @@ namespace GuideMe
 
                             leitura += aux+" ";
                         }
-
-
                         //leitura = ConvertHex(leitura);
 
                         //leitura = System.Text.Encoding.ASCII.GetString(dadoRFID);
 
                         leitura = leitura.ToUpper().Trim();
-                        ParserAntena.ParseData(leitura);
+                        var frameLido = ParserAntena.ParseData(leitura);
+                        if (frameLido != null)
+                        {
+                            if (frameLido.TipoFrame == TrataFrames.LeituraTag)
+                            {
+                                if (frame == null || frame.TagID != (frameLido as FrameLeituraTag).TagID)
+                                {
+                                    frame = (frameLido as FrameLeituraTag);
+                                    await this.DisplayToastAsync($"Tag lida: {frame.TagID} ", 2000);
+                                }
+                               
+                               
+
+                            }
+                        }
                     }
 
                     
 
-                    /*string comando = "BB 01 FF 00 01 15 16 7E";
-                    var frame = ParserAntena.ParseData(comando);*/
-
-
-                    /*
-                     * byte[] dadoRFID = await _bluetoothService.LeDadosRFIDAsync(dispositivoConectado);
-                            string abc = Encoding.UTF8.GetString(dadoRFID);
-                            Debugger.Log(1, "a", "Executada a linha 127");
-                     */
-                    Thread.Sleep(100);
+                   
+                    Thread.Sleep(350);
                 }
             }
             catch (Exception err)
-            { 
+            {
+                _ = Task.Factory.StartNew(_ => LeituraTagsBengala(), TaskCreationOptions.LongRunning);
             }
         }
       
