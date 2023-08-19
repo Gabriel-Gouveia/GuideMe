@@ -127,6 +127,7 @@ namespace GuideMe
                         if (_device != null)
                         { 
                             _threadLeituraTag = true;
+                            await _bluetoothService.AcionarVibracaoBengala(_device, 2);
                             await this.DisplayToastAsync("bengala conectada com sucesso!", 2000);
                             _ = Task.Factory.StartNew(_ => LeituraTagsBengala(), TaskCreationOptions.LongRunning);
                             
