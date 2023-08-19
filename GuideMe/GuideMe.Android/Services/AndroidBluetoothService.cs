@@ -221,7 +221,7 @@ namespace GuideMe.Droid
 
         private async Task<IService> ObtemServicoBLEAsync(IDevice dispositivoConectado)
         {
-            if (dispositivoConectado.Name == "ESP32-BLE-Server" && dispositivoConectado.State == DeviceState.Connected)
+            if (dispositivoConectado.Name == StorageDAO.NomeBengalaBluetooth && dispositivoConectado.State == DeviceState.Connected)
                 return await dispositivoConectado.GetServiceAsync(Guid.Parse("4FAFC201-1FB5-459E-8FCC-C5C9C331914B"));
 
             return null;
