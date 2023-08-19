@@ -11,6 +11,7 @@ namespace GuideMe.Interfaces
     public delegate void OnBluetoothScanTerminado();
     public interface IAndroidBluetoothService
     {
+        
         List<IDevice> _dispositivosEscaneados { get; set; }
 
         event OnBluetoothScanTerminado OnBluetoothScanTerminado;
@@ -25,5 +26,6 @@ namespace GuideMe.Interfaces
         Task<PermissionStatus> ObtemPermissaoBluetoothLE();
         void ReiniciarOAppAposFalha();
         Task<byte[]> LeDadosRFIDAsync(IDevice dispositivoConectado);
+        Task<bool> AcionarVibracaoBengala(IDevice dispositivoConectado, int qtVibracoes);
     }
 }

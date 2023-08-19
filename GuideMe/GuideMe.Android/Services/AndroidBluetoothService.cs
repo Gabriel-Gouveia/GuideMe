@@ -21,12 +21,15 @@ using Plugin.BLE.Abstractions.Contracts;
 using Plugin.BLE.Abstractions;
 using System.Collections.ObjectModel;
 using Plugin.BLE.Abstractions.Exceptions;
+using GuideMe.DAO;
 
 [assembly: Dependency(typeof(AndroidBluetoothService))]
 namespace GuideMe.Droid
 {
     public class AndroidBluetoothService : IAndroidBluetoothService
     {
+        private readonly string ServicoBengala = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+        private readonly string MotorCharacteristc = "30305726-ec78-11ed-a05b-0242ac120003";
         private readonly Plugin.BLE.Abstractions.Contracts.IAdapter _bluetoothAdapter;
         public List<IDevice> dispositivosEscaneados = new List<IDevice>();
 
@@ -297,6 +300,29 @@ namespace GuideMe.Droid
                     System.Diagnostics.Process.GetCurrentProcess().Kill();
                 }
             }
+        }
+
+        public async Task<bool> AcionarVibracaoBengala(IDevice dispositivoConectado, int qtVibracoes)
+        {
+            string comando = $"|{qtVibracoes.ToString()}";
+            if (dispositivoConectado != null && dispositivoConectado.State == DeviceState.Connected && (dispositivoConectado.Name == StorageDAO.NomeBengalaBluetooth))
+            {
+                IService servicoBengala = await dispositivoConectado.GetServiceAsync(Guid.Parse(ServicoBengala));
+                if (servicoBengala != null)
+                {
+                    ICharacteristic caracteristicaMotor = await servicoBengala.GetCharacteristicAsync(new Guid(MotorCharacteristc));
+                    if (caracteristicaMotor != null)
+                        return await caracteristicaMotor.WriteAsync(Encoding.ASCII.GetBytes(comando));
+                    else
+                        return false;
+                }
+                else
+                    return false;
+
+            }
+            else
+                return false;
+            
         }
     }
 }

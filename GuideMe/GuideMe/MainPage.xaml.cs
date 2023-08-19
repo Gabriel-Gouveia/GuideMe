@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using Xamarin.CommunityToolkit.Extensions;
 using System.Collections.Generic;
+using System.Text;
 
 namespace GuideMe
 {
@@ -124,10 +125,9 @@ namespace GuideMe
                     {
                         _device = await /*Task.Run(*/_bluetoothService.EscanearDispositivosEConectarAoESP32Async(StorageDAO.NomeBengalaBluetooth);/*)*/
                         if (_device != null)
-                        {
+                        { 
                             _threadLeituraTag = true;
-                            await this.DisplayToastAsync("bengala conectada com sucesso!", 5000);
-                            await DisplayAlert("Aviso", "bengala conectada com sucesso!", "Ok");
+                            await this.DisplayToastAsync("bengala conectada com sucesso!", 2000);
                             _ = Task.Factory.StartNew(_ => LeituraTagsBengala(), TaskCreationOptions.LongRunning);
                             
                         }
@@ -230,6 +230,16 @@ namespace GuideMe
         private async void btn_escanearBluetooth_Clicked(object sender, EventArgs e)
         {
             await Navigation.PushAsync(new DispositivosBluetooth(_bluetoothService));
+        }
+
+        private async void btn_vibrarMotor_Clicked(object sender, EventArgs e)
+        {
+            
+            if (await _bluetoothService.AcionarVibracaoBengala(_device, 2))
+                await this.DisplayToastAsync("comando enviado com sucesso", 2000);
+            else
+                await this.DisplayToastAsync("comando não enviado!", 2000);
+
         }
     }
 }

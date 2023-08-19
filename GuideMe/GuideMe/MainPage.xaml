@@ -32,6 +32,14 @@
                 BackgroundColor="#0c0c0d"
                 Clicked="btn_escanearBluetooth_Clicked"
                 TextColor="White"></Button>
+        <Button Text="Vibrar motor"
+                x:Name="btn_vibrarMotor"
+                FontSize="25" 
+                Margin="30,0,30,0" 
+                CornerRadius="20"
+                BackgroundColor="#0c0c0d"
+                Clicked="btn_vibrarMotor_Clicked"
+                TextColor="White"></Button>
     </StackLayout>
     
 
