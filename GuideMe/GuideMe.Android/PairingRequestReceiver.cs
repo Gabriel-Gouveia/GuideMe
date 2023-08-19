@@ -28,8 +28,13 @@ namespace GuideMe.Droid
                     // Use the predetermined passkey
                     int predeterminedPasskey = 123456;
                     device.SetPin(Encoding.UTF8.GetBytes(predeterminedPasskey.ToString()));
+                    //device.SetPairingConfirmation(true);    
                     device.CreateBond();
                     InvokeAbortBroadcast();
+
+                    while (device.BondState == Bond.Bonding) ;
+
+                    
 
                 }
             }

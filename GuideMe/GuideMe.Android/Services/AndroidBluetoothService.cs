@@ -30,6 +30,7 @@ namespace GuideMe.Droid
     {
         private readonly string ServicoBengala = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
         private readonly string MotorCharacteristc = "30305726-ec78-11ed-a05b-0242ac120003";
+        private readonly string TAGCharacteristc = "BEB5483E-36E1-4688-B7F5-EA07361B26A8";
         private readonly Plugin.BLE.Abstractions.Contracts.IAdapter _bluetoothAdapter;
         public List<IDevice> dispositivosEscaneados = new List<IDevice>();
 
@@ -47,10 +48,17 @@ namespace GuideMe.Droid
         public AndroidBluetoothService()
         {
             _bluetoothAdapter = CrossBluetoothLE.Current.Adapter;
-            _bluetoothAdapter.DeviceDiscovered += (sender, dispositivoEncontrado) =>
+            _bluetoothAdapter.DeviceDiscovered += async (sender, dispositivoEncontrado) =>
             {
                 if (dispositivoEncontrado.Device != null && !string.IsNullOrEmpty(dispositivoEncontrado.Device.Name))
                 {
+                    var teste = dispositivoEncontrado.Device.AdvertisementRecords;
+                    foreach (var record in teste)
+                    {
+                        string utfString = Encoding.ASCII.GetString(record.Data, 0, record.Data.Length);
+                    }
+                    //var teste = await dispositivoEncontrado.Device.GetServicesAsync();
+                    //var servico = await dispositivoEncontrado.Device.GetServiceAsync(Guid.Parse(ServicoBengala));
                     dispositivosEscaneados.Add(dispositivoEncontrado.Device);
                     if (Debugger.IsAttached)
                         Console.WriteLine($"Dispositivo encontrado! {dispositivoEncontrado.Device.Name}");
@@ -222,7 +230,7 @@ namespace GuideMe.Droid
         private async Task<IService> ObtemServicoBLEAsync(IDevice dispositivoConectado)
         {
             if (dispositivoConectado.Name == StorageDAO.NomeBengalaBluetooth && dispositivoConectado.State == DeviceState.Connected)
-                return await dispositivoConectado.GetServiceAsync(Guid.Parse("4FAFC201-1FB5-459E-8FCC-C5C9C331914B"));
+                return await dispositivoConectado.GetServiceAsync(Guid.Parse(ServicoBengala));
 
             return null;
         }
@@ -232,7 +240,7 @@ namespace GuideMe.Droid
             IService service = await ObtemServicoBLEAsync(dispositivoConectado);
 
             if (service != null)
-                return await service.GetCharacteristicAsync(Guid.Parse("BEB5483E-36E1-4688-B7F5-EA07361B26A8"));
+                return await service.GetCharacteristicAsync(Guid.Parse(TAGCharacteristc));
 
             return null;
         }

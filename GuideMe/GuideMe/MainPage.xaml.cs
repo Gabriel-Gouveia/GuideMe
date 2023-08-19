@@ -121,29 +121,35 @@ namespace GuideMe
 
                 else if(!string.IsNullOrEmpty(StorageDAO.NomeBengalaBluetooth) && !_threadLeituraTag)
                 {
-                    try
-                    {
-                        _device = await /*Task.Run(*/_bluetoothService.EscanearDispositivosEConectarAoESP32Async(StorageDAO.NomeBengalaBluetooth);/*)*/
-                        if (_device != null)
-                        { 
-                            _threadLeituraTag = true;
-                            await _bluetoothService.AcionarVibracaoBengala(_device, 2);
-                            await this.DisplayToastAsync("bengala conectada com sucesso!", 2000);
-                            _ = Task.Factory.StartNew(_ => LeituraTagsBengala(), TaskCreationOptions.LongRunning);
-                            
-                        }
-                        else
-                            await DisplayAlert("Aviso", "Não foi possível conectar com a bengala", "Ok");
-
-                    }
-
-                    catch (Exception ex)
-                    {
-                        await DisplayAlert("Exceção", "Deu a exceção do Java Security pedindo o bluetooth connection.", "Ok");
-                    }
+                    ConectarNaBengala();
                 }
             }
         }
+
+        private async void ConectarNaBengala()
+        {
+            try
+            {
+                _device = await /*Task.Run(*/_bluetoothService.EscanearDispositivosEConectarAoESP32Async(StorageDAO.NomeBengalaBluetooth);/*)*/
+                if (_device != null)
+                {
+                    _threadLeituraTag = true;
+                    await _bluetoothService.AcionarVibracaoBengala(_device, 2);
+                    await this.DisplayToastAsync("bengala conectada com sucesso!", 2000);
+                    _ = Task.Factory.StartNew(_ => LeituraTagsBengala(), TaskCreationOptions.LongRunning);
+
+                }
+                else
+                    await DisplayAlert("Aviso", "Não foi possível conectar com a bengala", "Ok");
+
+            }
+
+            catch (Exception ex)
+            {
+                await DisplayAlert("Exceção", "Deu a exceção do Java Security pedindo o bluetooth connection.", "Ok");
+            }
+        }
+
         public static string ConvertHex(string hexString)
         {
             try
@@ -170,6 +176,7 @@ namespace GuideMe
         private async void LeituraTagsBengala()
         {
             FrameLeituraTag frame = null;
+            string instanteMillis = null;
             try
             {
                 while (_threadLeituraTag && _device!=null)
@@ -198,21 +205,29 @@ namespace GuideMe
                         //leitura = System.Text.Encoding.ASCII.GetString(dadoRFID);
 
                         leitura = leitura.ToUpper().Trim();
-                        var frameLido = ParserAntena.ParseData(leitura);
-                        if (frameLido != null)
+                        string[] tokensFinais = leitura.Split('-');
+                        if (tokensFinais.Length == 2)
                         {
-                            if (frameLido.TipoFrame == TrataFrames.LeituraTag)
+                            
+                            var frameLido = ParserAntena.ParseData(tokensFinais[0]);
+                            if (frameLido != null)
                             {
-                                if (frame == null || frame.TagID != (frameLido as FrameLeituraTag).TagID)
+                                if (frameLido.TipoFrame == TrataFrames.LeituraTag)
                                 {
-                                    frame = (frameLido as FrameLeituraTag);
-                                    await this.DisplayToastAsync($"Tag lida: {frame.TagID} ", 2000);
-                                }
-                               
-                               
+                                    if (instanteMillis == null || instanteMillis.Trim() != tokensFinais[1].Trim())
+                                    {
+                                        //TOdo IMPLEMENTAR TAMBÉM A VERIFICAÇÃO DE DATA E HORA PELO APP PRA EVITAR MULTIPLOS DISPAROS EM UM MESMO INSTANTE
+                                        instanteMillis = tokensFinais[1];
+                                        frame = (frameLido as FrameLeituraTag);
+                                        await this.DisplayToastAsync($"Tag lida: {frame.TagID} ", 800);
+                                    }
 
+
+
+                                }
                             }
                         }
+
                     }
 
                     
@@ -230,7 +245,53 @@ namespace GuideMe
 
         private async void btn_escanearBluetooth_Clicked(object sender, EventArgs e)
         {
-            await Navigation.PushAsync(new DispositivosBluetooth(_bluetoothService));
+            //await Navigation.PushAsync(new DispositivosBluetooth(_bluetoothService));
+
+            if (_bluetoothService != null)
+            {
+                if (_bluetoothService is IAndroidBluetoothService)
+                {
+                    (_bluetoothService as IAndroidBluetoothService).OnBluetoothScanTerminado -= MainPage_OnBluetoothScanTerminado;
+                    (_bluetoothService as IAndroidBluetoothService).OnBluetoothScanTerminado += MainPage_OnBluetoothScanTerminado;
+                    _ = _bluetoothService.EscanearDispositivosAsync();
+                    _=this.DisplayToastAsync("Procurando dispositivos..", 2000);
+                }
+
+
+            }
+
+        }
+
+        private async void MainPage_OnBluetoothScanTerminado()
+        {
+            List<IDevice> dispositivos = new List<IDevice>();
+            if (_bluetoothService is IAndroidBluetoothService)
+                dispositivos = new List<IDevice>((_bluetoothService as IAndroidBluetoothService)._dispositivosEscaneados);
+
+            IDevice deviceMenorRSSI = null;
+            if (dispositivos != null && dispositivos.Count > 0)
+            {
+                (_bluetoothService as IAndroidBluetoothService).OnBluetoothScanTerminado -= MainPage_OnBluetoothScanTerminado;
+
+                foreach (IDevice device in dispositivos)
+                {
+                    if (deviceMenorRSSI == null || deviceMenorRSSI.Rssi < device.Rssi)
+                        deviceMenorRSSI = device;
+
+                }
+
+                if (deviceMenorRSSI != null)
+                {
+                    _=this.DisplayToastAsync($"Dispositivo encontrado! {deviceMenorRSSI.Name}", 800);
+                    if (await StorageDAO.SalvaConfiguracoesNomeBengala(deviceMenorRSSI.Name))
+                        ConectarNaBengala();
+
+                }
+                else
+                    _ = this.DisplayToastAsync($"Nenhum dispositivo encontrado!", 800);
+
+
+            }
         }
 
         private async void btn_vibrarMotor_Clicked(object sender, EventArgs e)

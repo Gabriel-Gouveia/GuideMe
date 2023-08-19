@@ -141,6 +141,11 @@ void loop() {
         if(frame[3]=='2')
         {
           Serial.println("Frame recebido da antena: " + frame);
+          unsigned long tempo = millis();
+          char bufMillis[50];
+          ltoa(tempo, bufMillis, 10);  // 10 is the base value not the size - look up ltoa for avr
+          frame += "-" + String(bufMillis);
+          Serial.println("Caracteristica Armazenada " + frame);
           char buffer[frame.length()];
           frame.toCharArray(buffer, frame.length()+1);
           pCharacteristic->setValue(buffer);
