@@ -53,12 +53,42 @@ class MyServerCallbacks: public BLEServerCallbacks {
     }
 };
 
+class MySecurity : public BLESecurityCallbacks {
+
+	uint32_t onPassKeyRequest(){
+        ESP_LOGI(LOG_TAG, "PassKeyRequest");
+		return 123456;
+	}
+	void onPassKeyNotify(uint32_t pass_key){
+        ESP_LOGI(LOG_TAG, "The passkey Notify number:%d", pass_key);
+	}
+	bool onConfirmPIN(uint32_t pass_key){
+        ESP_LOGI(LOG_TAG, "The passkey YES/NO number:%d", pass_key);
+	    vTaskDelay(5000);
+		return true;
+	}
+	bool onSecurityRequest(){
+	    ESP_LOGI(LOG_TAG, "SecurityRequest");
+		return true;
+	}
+
+	void onAuthenticationComplete(esp_ble_auth_cmpl_t cmpl){
+		ESP_LOGI(LOG_TAG, "Starting BLE work!");
+	}
+};
+
 void setup() {
   Serial.begin(115200);
   Serial.println("Starting BLE Server!");
   Serial2.begin(115200);
 
-  BLEDevice::init("ESP32-BLE-Server");
+  BLEDevice::init("TCC_Bengala_01");
+  BLEDevice::setEncryptionLevel(ESP_BLE_SEC_ENCRYPT);
+  BLEDevice::setSecurityCallbacks(new MySecurity());
+  /*
+* Required in authentication process to provide displaying and/or input passkey or yes/no butttons confirmation
+*/
+  BLEDevice::setSecurityCallbacks(new MySecurity());
   pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks()); //set the callback function
   pService = pServer->createService(SERVICE_UUID);
@@ -88,6 +118,12 @@ void setup() {
   pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
   pAdvertising->setMinPreferred(0x12);
   BLEDevice::startAdvertising();
+
+  	BLESecurity *pSecurity = new BLESecurity();
+	pSecurity->setKeySize();
+	pSecurity->setAuthenticationMode(ESP_LE_AUTH_REQ_SC_MITM_BOND);
+	pSecurity->setCapability(ESP_IO_CAP_IO);
+	pSecurity->setInitEncryptionKey(ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK);
   //pAdvertising->start();
   Serial.println("Characteristic defined! Now you can read it in the Client!");
   pinMode(13,OUTPUT);
@@ -222,25 +258,3 @@ void ParseStringMotor(std::string valor)
     
   }
 }
-
-/*void ParseFrame(String _frame)
-{
-  int comeco=0;
-  int fim=0;
-  for(int n=0;n<_frame.length();n++)
-  {
-    if(_frame.length()>2)
-    {
-      if(n==2)
-      {
-        if(frame[n-1]=='b')
-        {
-          comeco=n;
-        }
-        
-      }
-      
-    }
-  }
-  
-}*/
