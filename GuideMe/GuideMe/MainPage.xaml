@@ -34,7 +34,11 @@
                 BackgroundColor="#0c0c0d"
                 Clicked="btn_escanearBluetooth_Clicked"
                 IsVisible="false"
-                TextColor="White"></Button>
+                TextColor="White">
+            <Button.GestureRecognizers>
+                <SwipeGestureRecognizer Direction="Right" Swiped="SwipeGestureRecognizer_Swiped_Direita" />
+            </Button.GestureRecognizers>
+        </Button>
         <Button Text="Vibrar motor"
                 x:Name="btn_vibrarMotor"
                 FontSize="25" 
@@ -43,7 +47,14 @@
                 CornerRadius="20"
                 BackgroundColor="#0c0c0d"
                 Clicked="btn_vibrarMotor_Clicked"
-                TextColor="White"></Button>
+                TextColor="White">
+            <Button.GestureRecognizers>
+                <SwipeGestureRecognizer Direction="Right" Swiped="SwipeGestureRecognizer_Swiped_Direita" />
+            </Button.GestureRecognizers>
+        </Button>
+        <StackLayout.GestureRecognizers>
+            <SwipeGestureRecognizer Direction="Right" Swiped="SwipeGestureRecognizer_Swiped_Direita" />
+        </StackLayout.GestureRecognizers>
     </StackLayout>
     
 

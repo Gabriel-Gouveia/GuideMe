@@ -373,5 +373,11 @@ namespace GuideMe
         {
             return await _bluetoothService.AcionarVibracaoBengala(_device, qtVibracao);
         }
+        //Swipe para direita
+        private void SwipeGestureRecognizer_Swiped_Direita(object sender, SwipedEventArgs e)
+        {
+            if (_device != null)
+                FilaRequsicoesBengala.Add(new RequisicaoMotor() { Tipo = Enum.EnumTipoRequisicaoBengala.AcionarMotor, QtVibracoes = 2 });
+        }
     }
 }
