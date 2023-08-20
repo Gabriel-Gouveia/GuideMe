@@ -33,6 +33,7 @@ namespace GuideMe.Droid
         private readonly string TAGCharacteristc = "BEB5483E-36E1-4688-B7F5-EA07361B26A8";
         private readonly Plugin.BLE.Abstractions.Contracts.IAdapter _bluetoothAdapter;
         public List<IDevice> dispositivosEscaneados = new List<IDevice>();
+        bool lockCaracteristicaBluetooth = false;
 
         IDevice _device;
 
@@ -50,13 +51,8 @@ namespace GuideMe.Droid
             _bluetoothAdapter = CrossBluetoothLE.Current.Adapter;
             _bluetoothAdapter.DeviceDiscovered += async (sender, dispositivoEncontrado) =>
             {
-                if (dispositivoEncontrado.Device != null && !string.IsNullOrEmpty(dispositivoEncontrado.Device.Name))
+                if (dispositivoEncontrado.Device != null && !string.IsNullOrEmpty(dispositivoEncontrado.Device.Name) && VerificaSeBengala(dispositivoEncontrado.Device))
                 {
-                    var teste = dispositivoEncontrado.Device.AdvertisementRecords;
-                    foreach (var record in teste)
-                    {
-                        string utfString = Encoding.ASCII.GetString(record.Data, 0, record.Data.Length);
-                    }
                     //var teste = await dispositivoEncontrado.Device.GetServicesAsync();
                     //var servico = await dispositivoEncontrado.Device.GetServiceAsync(Guid.Parse(ServicoBengala));
                     dispositivosEscaneados.Add(dispositivoEncontrado.Device);
@@ -64,6 +60,35 @@ namespace GuideMe.Droid
                         Console.WriteLine($"Dispositivo encontrado! {dispositivoEncontrado.Device.Name}");
                 }
             };
+        }
+
+        private bool VerificaSeBengala(IDevice device)
+        {
+            bool retorno = false;
+            bool shortName = false;
+            bool manufacturerData = false;
+            try
+            {
+                var dados = device.AdvertisementRecords;
+                foreach (var record in dados)
+                {
+                    string utfString = Encoding.ASCII.GetString(record.Data, 0, record.Data.Length);
+
+                    if (record.Type == AdvertisementRecordType.ShortLocalName && utfString.Trim() == "BengTCC")
+                        shortName = true;
+                    else if (record.Type == AdvertisementRecordType.ManufacturerSpecificData && utfString.Trim() == "Rodrigo")
+                        manufacturerData = true;
+                }
+                return shortName && manufacturerData;
+            }
+            catch
+            {
+                
+            }
+
+
+
+            return retorno;
         }
 
         public void AbreTelaConfiguracoes()
@@ -249,6 +274,7 @@ namespace GuideMe.Droid
         {
             try
             {
+
                 ICharacteristic characteristic = await LeCaracteristicaAsync(dispositivoConectado);
 
                 if (characteristic != null)
@@ -258,6 +284,7 @@ namespace GuideMe.Droid
                 }
 
                 return null;
+
             }
 
             catch (Exception ex)
@@ -330,7 +357,6 @@ namespace GuideMe.Droid
             }
             else
                 return false;
-            
         }
     }
 }

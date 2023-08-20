@@ -35,6 +35,8 @@ BLEServer *pServer;
 BLEService *pService;
 BLECharacteristic *pCharacteristic;
 BLECharacteristic *pCharacteristicMotor;
+BLEAdvertisementData oAdvertisementData = BLEAdvertisementData();
+char  ManufacturerData[8] = {0x52,0x6f,0x64,0x72,0x69,0x67,0x6f,0x00};
 String frame = "";
 String frame_semEspaco = "";
 byte readFrame[] = { 0xBB, 0X00, 0X22, 0X00, 0X00, 0X22, 0X7E };
@@ -91,6 +93,9 @@ void setup() {
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
   pAdvertising->addServiceUUID(SERVICE_UUID);
   pAdvertising->setScanResponse(true);
+  oAdvertisementData.setShortName("BengTCC");
+  oAdvertisementData.setManufacturerData(ManufacturerData);
+  pAdvertising->setAdvertisementData(oAdvertisementData);
   pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
   pAdvertising->setMinPreferred(0x12);
   BLEDevice::startAdvertising();

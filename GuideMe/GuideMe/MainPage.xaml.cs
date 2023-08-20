@@ -9,6 +9,8 @@ using System.Threading;
 using Xamarin.CommunityToolkit.Extensions;
 using System.Collections.Generic;
 using System.Text;
+using GuideMe.Bengala;
+using System.Collections.Concurrent;
 
 namespace GuideMe
 {
@@ -20,8 +22,9 @@ namespace GuideMe
         private IAndroidBluetoothService _bluetoothService;
         IDevice _device;
         private string _versaoDoAndroid;
+        private ConcurrentBag<RequisicaoBase> FilaRequsicoesBengala = new ConcurrentBag<RequisicaoBase>();
 
-        private bool _threadLeituraTag = false;
+        private bool _threadMensagensBengala = false;
 
         public MainPage()
         {
@@ -119,13 +122,18 @@ namespace GuideMe
                         _bluetoothService.AbreTelaConfiguracoes();
                 }
 
-                else if(!string.IsNullOrEmpty(StorageDAO.NomeBengalaBluetooth) && !_threadLeituraTag)
+                else if(!string.IsNullOrEmpty(StorageDAO.NomeBengalaBluetooth) && !_threadMensagensBengala)
                 {
                     ConectarNaBengala();
                 }
             }
         }
 
+        private void InicializaThreadsBengala()
+        {
+            _ = Task.Factory.StartNew(_ => MensagensBengala(), TaskCreationOptions.LongRunning);
+            _ = Task.Factory.StartNew(_ => RequisitaLeiturasTags(), TaskCreationOptions.LongRunning);
+        }
         private async void ConectarNaBengala()
         {
             try
@@ -133,10 +141,10 @@ namespace GuideMe
                 _device = await /*Task.Run(*/_bluetoothService.EscanearDispositivosEConectarAoESP32Async(StorageDAO.NomeBengalaBluetooth);/*)*/
                 if (_device != null)
                 {
-                    _threadLeituraTag = true;
+                    _threadMensagensBengala = true;
                     await _bluetoothService.AcionarVibracaoBengala(_device, 2);
-                    await this.DisplayToastAsync("bengala conectada com sucesso!", 2000);
-                    _ = Task.Factory.StartNew(_ => LeituraTagsBengala(), TaskCreationOptions.LongRunning);
+                    _= this.DisplayToastAsync("bengala conectada com sucesso!", 2000);
+                    InicializaThreadsBengala();
 
                 }
                 else
@@ -173,73 +181,121 @@ namespace GuideMe
 
             return string.Empty;
         }
-        private async void LeituraTagsBengala()
+
+        private async void MensagensBengala()
         {
-            FrameLeituraTag frame = null;
-            string instanteMillis = null;
+            FrameLeituraTag ultimoFrameLido = null;
             try
             {
-                while (_threadLeituraTag && _device!=null)
+                while (_threadMensagensBengala && _device != null)
                 {
-                    byte[] dadoRFID = await _bluetoothService.LeDadosRFIDAsync(_device);
-
-                    if (dadoRFID != null)
+                    if (FilaRequsicoesBengala != null && FilaRequsicoesBengala.Count > 0)
                     {
-                        string leitura = "";
-                        foreach (byte b in dadoRFID)
-                            leitura += ((char)b).ToString();
-
-                        string[] tokens = leitura.Split(' ');
-                        leitura = "";
-                        foreach (string s in tokens)
+                        RequisicaoBase requisicao = null;
+                        if (FilaRequsicoesBengala.TryTake(out requisicao))
                         {
-                            string aux = s;
-
-                            if (aux.Length == 1)
-                                aux = "0" + s;
-
-                            leitura += aux+" ";
-                        }
-                        //leitura = ConvertHex(leitura);
-
-                        //leitura = System.Text.Encoding.ASCII.GetString(dadoRFID);
-
-                        leitura = leitura.ToUpper().Trim();
-                        string[] tokensFinais = leitura.Split('-');
-                        if (tokensFinais.Length == 2)
-                        {
-                            
-                            var frameLido = ParserAntena.ParseData(tokensFinais[0]);
-                            if (frameLido != null)
+                            switch (requisicao.Tipo)
                             {
-                                if (frameLido.TipoFrame == TrataFrames.LeituraTag)
-                                {
-                                    if (instanteMillis == null || instanteMillis.Trim() != tokensFinais[1].Trim())
-                                    {
-                                        //TOdo IMPLEMENTAR TAMBÉM A VERIFICAÇÃO DE DATA E HORA PELO APP PRA EVITAR MULTIPLOS DISPAROS EM UM MESMO INSTANTE
-                                        instanteMillis = tokensFinais[1];
-                                        frame = (frameLido as FrameLeituraTag);
-                                        await this.DisplayToastAsync($"Tag lida: {frame.TagID} ", 800);
-                                    }
-
-
-
-                                }
+                                case Enum.EnumTipoRequisicaoBengala.LeituraTag:
+                                    FrameLeituraTag frameAux = await LeituraTagsBengala(ultimoFrameLido == null ? null : ultimoFrameLido.IDMensagem);
+                                    if (frameAux != null)
+                                        ultimoFrameLido = frameAux;
+                                    break;
+                                case Enum.EnumTipoRequisicaoBengala.AcionarMotor:
+                                    if (requisicao is RequisicaoMotor)
+                                        if (await VibrarMotor(2))
+                                            _=this.DisplayToastAsync("Comando enviado com sucesso", 800);
+                                        else
+                                            _ = this.DisplayToastAsync("Comando erro", 800);
+                                    break;
                             }
                         }
 
+                        
                     }
-
-                    
-
-                   
                     Thread.Sleep(350);
                 }
             }
             catch (Exception err)
             {
-                _ = Task.Factory.StartNew(_ => LeituraTagsBengala(), TaskCreationOptions.LongRunning);
+                _ = Task.Factory.StartNew(_ => MensagensBengala(), TaskCreationOptions.LongRunning);
             }
+        }
+        private  void RequisitaLeiturasTags()
+        {
+            try
+            {
+                while (_threadMensagensBengala && _device != null)
+                {
+                    FilaRequsicoesBengala.Add(new RequisicaoBase() { Tipo = Enum.EnumTipoRequisicaoBengala.LeituraTag });
+                    Thread.Sleep(350);
+                }
+            }
+            catch (Exception err)
+            {
+                _ = Task.Factory.StartNew(_ => RequisitaLeiturasTags(), TaskCreationOptions.LongRunning);
+            }
+        }
+        private async Task<FrameLeituraTag> LeituraTagsBengala(string instanteMillis)
+        {
+            FrameLeituraTag frame = null;
+            try
+            {
+                byte[] dadoRFID = await _bluetoothService.LeDadosRFIDAsync(_device);
+
+                if (dadoRFID != null)
+                {
+                    string leitura = "";
+                    foreach (byte b in dadoRFID)
+                        leitura += ((char)b).ToString();
+
+                    string[] tokens = leitura.Split(' ');
+                    leitura = "";
+                    foreach (string s in tokens)
+                    {
+                        string aux = s;
+
+                        if (aux.Length == 1)
+                            aux = "0" + s;
+
+                        leitura += aux + " ";
+                    }
+                    //leitura = ConvertHex(leitura);
+
+                    //leitura = System.Text.Encoding.ASCII.GetString(dadoRFID);
+
+                    leitura = leitura.ToUpper().Trim();
+                    string[] tokensFinais = leitura.Split('-');
+                    if (tokensFinais.Length == 2)
+                    {
+
+                        var frameLido = ParserAntena.ParseData(tokensFinais[0]);
+                        if (frameLido != null)
+                        {
+                            if (frameLido.TipoFrame == TrataFrames.LeituraTag)
+                            {
+                                if (instanteMillis == null || instanteMillis.Trim() != tokensFinais[1].Trim())
+                                {
+                                    //TOdo IMPLEMENTAR TAMBÉM A VERIFICAÇÃO DE DATA E HORA PELO APP PRA EVITAR MULTIPLOS DISPAROS EM UM MESMO INSTANTE
+                       
+                                    frame = (frameLido as FrameLeituraTag);
+                                    frame.IDMensagem = tokensFinais[1];
+                                    _ = this.DisplayToastAsync($"Tag lida: {frame.TagID} ", 800);
+                                }
+
+
+
+                            }
+                        }
+                    }
+
+                }
+            }
+            catch (Exception err)
+            {
+               
+            }
+            return frame==null ?null : (FrameLeituraTag)frame.Clone();
         }
       
 
@@ -268,22 +324,22 @@ namespace GuideMe
             if (_bluetoothService is IAndroidBluetoothService)
                 dispositivos = new List<IDevice>((_bluetoothService as IAndroidBluetoothService)._dispositivosEscaneados);
 
-            IDevice deviceMenorRSSI = null;
+            IDevice deviceMaiorRSSI = null;
             if (dispositivos != null && dispositivos.Count > 0)
             {
                 (_bluetoothService as IAndroidBluetoothService).OnBluetoothScanTerminado -= MainPage_OnBluetoothScanTerminado;
 
                 foreach (IDevice device in dispositivos)
                 {
-                    if (deviceMenorRSSI == null || deviceMenorRSSI.Rssi < device.Rssi)
-                        deviceMenorRSSI = device;
+                    if (deviceMaiorRSSI == null || deviceMaiorRSSI.Rssi > device.Rssi)
+                        deviceMaiorRSSI = device;
 
                 }
 
-                if (deviceMenorRSSI != null)
+                if (deviceMaiorRSSI != null)
                 {
-                    _=this.DisplayToastAsync($"Dispositivo encontrado! {deviceMenorRSSI.Name}", 800);
-                    if (await StorageDAO.SalvaConfiguracoesNomeBengala(deviceMenorRSSI.Name))
+                    _=this.DisplayToastAsync($"Dispositivo encontrado! {deviceMaiorRSSI.Name}", 800);
+                    if (await StorageDAO.SalvaConfiguracoesNomeBengala(deviceMaiorRSSI.Name))
                         ConectarNaBengala();
 
                 }
@@ -294,14 +350,16 @@ namespace GuideMe
             }
         }
 
-        private async void btn_vibrarMotor_Clicked(object sender, EventArgs e)
+        private  void btn_vibrarMotor_Clicked(object sender, EventArgs e)
         {
-            
-            if (await _bluetoothService.AcionarVibracaoBengala(_device, 2))
-                await this.DisplayToastAsync("comando enviado com sucesso", 2000);
-            else
-                await this.DisplayToastAsync("comando não enviado!", 2000);
+            FilaRequsicoesBengala.Add(new RequisicaoMotor() { Tipo = Enum.EnumTipoRequisicaoBengala.AcionarMotor, QtVibracoes = 2 });
+           
 
+        }
+
+        private async Task<bool> VibrarMotor(int qtVibracao)
+        {
+            return await _bluetoothService.AcionarVibracaoBengala(_device, qtVibracao);
         }
     }
 }

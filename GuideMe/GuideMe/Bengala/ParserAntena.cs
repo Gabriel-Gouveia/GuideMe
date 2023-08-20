@@ -2,14 +2,14 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace GuideMe
+namespace GuideMe.Bengala
 {
     public class FrameErro : AntenaFrame
     {
         public string Message { get; private set; }
         public FrameErro()
         {
-            this.TipoFrame = TrataFrames.ErroComando;
+            TipoFrame = TrataFrames.ErroComando;
         }
         public static FrameErro GetTagData(string[] framesString)
         {
@@ -117,19 +117,30 @@ namespace GuideMe
             }
         }
     }
-    public class FrameLeituraTag : AntenaFrame
+    public class FrameLeituraTag : AntenaFrame, ICloneable
     {
+        public string IDMensagem { get; set; } 
         public int RSSI { get; set; }
         public string TagID { get; set; }
         public string PC { get; set; }
         public string CRC { get; set; }
         public FrameLeituraTag(int _rssi, string _tagId, string _pc, string crc)
         {
-            this.TipoFrame = TrataFrames.LeituraTag;
+            TipoFrame = TrataFrames.LeituraTag;
             RSSI = _rssi;
             TagID = _tagId;
             PC = _pc;
             CRC = crc;
+        }
+
+        private FrameLeituraTag(FrameLeituraTag frame)
+        {
+            TipoFrame = TrataFrames.LeituraTag;
+            RSSI = frame.RSSI;
+            TagID = frame.TagID;
+            PC = frame.PC;
+            CRC = frame.CRC;
+            IDMensagem = frame.IDMensagem;
         }
 
         public static FrameLeituraTag GetTagData(string[] framesString)
@@ -146,10 +157,10 @@ namespace GuideMe
             int rssidBm = 0;
             if (bytes.Length > 5)
             {
-                rssidBm = Int32.Parse(bytes[5], System.Globalization.NumberStyles.HexNumber);
+                rssidBm = int.Parse(bytes[5], System.Globalization.NumberStyles.HexNumber);
                 if (rssidBm > 127)
                 {
-                    rssidBm = -((-rssidBm) & 0xFF);
+                    rssidBm = -(-rssidBm & 0xFF);
                 }
                 rssidBm -= 3;
                 rssidBm -= -20;
@@ -162,7 +173,7 @@ namespace GuideMe
             int PCEPCLength = 0;
             if (bytes.Length > 6)
             {
-                PCEPCLength = ((Int32.Parse(bytes[6], System.Globalization.NumberStyles.HexNumber)) / 8 + 1) * 2;
+                PCEPCLength = (int.Parse(bytes[6], System.Globalization.NumberStyles.HexNumber) / 8 + 1) * 2;
             }
             return PCEPCLength;
         }
@@ -174,6 +185,11 @@ namespace GuideMe
                 epc = epc + bytes[8 + i] + " ";
             }
             return epc;
+        }
+
+        public object Clone()
+        {
+            return new FrameLeituraTag(this);
         }
     }
     public abstract class AntenaFrame
