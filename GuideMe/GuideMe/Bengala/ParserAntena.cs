@@ -182,6 +182,7 @@ namespace GuideMe.Bengala
             string epc = string.Empty;
             for (int i = 0; i < PCEPCLength - 2; i++)
             {
+                //TODO está apresentando exceção de out of range
                 epc = epc + bytes[8 + i] + " ";
             }
             return epc;

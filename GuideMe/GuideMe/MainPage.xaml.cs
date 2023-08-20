@@ -37,7 +37,8 @@ namespace GuideMe
         protected override void OnAppearing()
         {
             base.OnAppearing();
-            VerificaCondicoesBluetooth();
+            if(_device==null)
+                VerificaCondicoesBluetooth();
         }
 
         private async void VerificaCondicoesBluetooth()
@@ -122,15 +123,21 @@ namespace GuideMe
                         _bluetoothService.AbreTelaConfiguracoes();
                 }
 
-                else if(!string.IsNullOrEmpty(StorageDAO.NomeBengalaBluetooth) && !_threadMensagensBengala)
-                {
+                else if (!string.IsNullOrEmpty(StorageDAO.NomeBengalaBluetooth) && !_threadMensagensBengala)
                     ConectarNaBengala();
+                else
+                {
+                    _ = this.DisplayToastAsync("Nenhuma bengala foi configurada!", 2000);
+                    this.btn_escanearBluetooth.IsVisible = true;
                 }
+                    
             }
         }
 
-        private void InicializaThreadsBengala()
+        private void InicializaControleBengala()
         {
+            this.btn_escanearBluetooth.IsVisible = true;
+            this.btn_vibrarMotor.IsVisible = true;
             _ = Task.Factory.StartNew(_ => MensagensBengala(), TaskCreationOptions.LongRunning);
             _ = Task.Factory.StartNew(_ => RequisitaLeiturasTags(), TaskCreationOptions.LongRunning);
         }
@@ -138,6 +145,7 @@ namespace GuideMe
         {
             try
             {
+                _ = this.DisplayToastAsync("Procurando pela bengala... aguarde", 2000);
                 _device = await /*Task.Run(*/_bluetoothService.EscanearDispositivosEConectarAoESP32Async(StorageDAO.NomeBengalaBluetooth);/*)*/
                 if (_device != null)
                 {
@@ -145,7 +153,7 @@ namespace GuideMe
                     bool apagouMsg = await _bluetoothService.ApagaUltimaTagLida(_device);
                     await _bluetoothService.AcionarVibracaoBengala(_device, 2);
                     _= this.DisplayToastAsync("bengala conectada com sucesso!", 2000);
-                    InicializaThreadsBengala();
+                    InicializaControleBengala();
 
                 }
                 else
@@ -336,6 +344,9 @@ namespace GuideMe
                         deviceMaiorRSSI = device;
 
                 }
+
+                if (_device != null)
+                    _device.Dispose();
 
                 if (deviceMaiorRSSI != null)
                 {
