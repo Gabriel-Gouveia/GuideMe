@@ -358,5 +358,26 @@ namespace GuideMe.Droid
             else
                 return false;
         }
+
+        public async Task<bool> ApagaUltimaTagLida(IDevice dispositivoConectado)
+        {
+            if (dispositivoConectado != null && dispositivoConectado.State == DeviceState.Connected && (dispositivoConectado.Name == StorageDAO.NomeBengalaBluetooth))
+            {
+                IService servicoBengala = await dispositivoConectado.GetServiceAsync(Guid.Parse(ServicoBengala));
+                if (servicoBengala != null)
+                {
+                    ICharacteristic caracteristicaTAG = await servicoBengala.GetCharacteristicAsync(new Guid(TAGCharacteristc));
+                    if (caracteristicaTAG != null)
+                        return await caracteristicaTAG.WriteAsync(new byte[] { 0x00});
+                    else
+                        return false;
+                }
+                else
+                    return false;
+
+            }
+            else
+                return false;
+        }
     }
 }

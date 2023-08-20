@@ -142,6 +142,7 @@ namespace GuideMe
                 if (_device != null)
                 {
                     _threadMensagensBengala = true;
+                    bool apagouMsg = await _bluetoothService.ApagaUltimaTagLida(_device);
                     await _bluetoothService.AcionarVibracaoBengala(_device, 2);
                     _= this.DisplayToastAsync("bengala conectada com sucesso!", 2000);
                     InicializaThreadsBengala();

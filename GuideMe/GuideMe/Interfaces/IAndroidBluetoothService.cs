@@ -26,6 +26,7 @@ namespace GuideMe.Interfaces
         Task<PermissionStatus> ObtemPermissaoBluetoothLE();
         void ReiniciarOAppAposFalha();
         Task<byte[]> LeDadosRFIDAsync(IDevice dispositivoConectado);
+        Task<bool> ApagaUltimaTagLida(IDevice dispositivoConectado);
         Task<bool> AcionarVibracaoBengala(IDevice dispositivoConectado, int qtVibracoes);
     }
 }
