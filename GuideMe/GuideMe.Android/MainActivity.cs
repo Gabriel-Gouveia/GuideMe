@@ -24,7 +24,15 @@ namespace GuideMe.Droid
             var pairingRequestFilter = new IntentFilter(BluetoothDevice.ActionPairingRequest);
             var receiver = new PairingRequestReceiver();
             RegisterReceiver(receiver, pairingRequestFilter);
+
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
         }
+
+        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            System.Diagnostics.Debug.WriteLine(e.ToString());
+        }
+
         public override void OnRequestPermissionsResult(int requestCode, string[] permissions, [GeneratedEnum] Android.Content.PM.Permission[] grantResults)
         {
             Xamarin.Essentials.Platform.OnRequestPermissionsResult(requestCode, permissions, grantResults);

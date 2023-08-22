@@ -11,6 +11,9 @@ using System.Collections.Generic;
 using System.Text;
 using GuideMe.Bengala;
 using System.Collections.Concurrent;
+using GuideMe.Gestos;
+using System.Linq;
+using GuideMe.Enum;
 
 namespace GuideMe
 {
@@ -23,6 +26,7 @@ namespace GuideMe
         IDevice _device;
         private string _versaoDoAndroid;
         private ConcurrentBag<RequisicaoBase> FilaRequsicoesBengala = new ConcurrentBag<RequisicaoBase>();
+        private ConcurrentQueue<GestosBase> FilaGestos = new ConcurrentQueue<GestosBase>();
 
         private bool _threadMensagensBengala = false;
 
@@ -140,6 +144,8 @@ namespace GuideMe
             this.btn_vibrarMotor.IsVisible = true;
             _ = Task.Factory.StartNew(_ => MensagensBengala(), TaskCreationOptions.LongRunning);
             _ = Task.Factory.StartNew(_ => RequisitaLeiturasTags(), TaskCreationOptions.LongRunning);
+            _ = Task.Factory.StartNew(_ => ControleGestos(), TaskCreationOptions.LongRunning);
+            
         }
         private async void ConectarNaBengala()
         {
@@ -190,7 +196,89 @@ namespace GuideMe
 
             return string.Empty;
         }
+        private void LimpaListaGestos(ref List<GestosBase> lista, bool forcarLimpeza=false)
+        {
+            List<GestosBase> novaLista = new List<GestosBase>();
+            if (forcarLimpeza)
+            {
+                lista = novaLista;
+                return;
+            }
+            foreach (GestosBase gesto in lista)
+            {
+                if (DateTime.Now.Subtract(gesto.Instantes).TotalSeconds < 2)
+                    novaLista.Add(gesto);
+            }
+           lista = novaLista;
+        }
+        private EnumTipoAcaoGesto InterpretaGesto(string comandos)
+        {
+            switch (comandos)
+            {
+                case "swdswd":
+                    return EnumTipoAcaoGesto.VibrarMotor;
+                default:
+                    return EnumTipoAcaoGesto.None;
 
+            }
+        }
+
+        private void ProcessaGesto(EnumTipoAcaoGesto comando)
+        {
+            Console.WriteLine($"Processando comando: {comando}");
+            switch (comando)
+            {
+                case EnumTipoAcaoGesto.VibrarMotor:
+                if (_device != null)
+                    FilaRequsicoesBengala.Add(new RequisicaoMotor() { Tipo = Enum.EnumTipoRequisicaoBengala.AcionarMotor, QtVibracoes = 2 });
+                    break;
+                default:
+                    return ;
+
+            }
+        }
+        private async void ControleGestos()
+        {
+            FrameLeituraTag ultimoFrameLido = null;
+            List<GestosBase> gestosProcessados =  new List<GestosBase>();
+            try
+            {
+                while (_threadMensagensBengala && _device != null)
+                {
+                    LimpaListaGestos(ref gestosProcessados);
+                    GestosBase _gestoNovo = null;
+
+                    if(FilaGestos.Count>0)
+                    FilaGestos.TryDequeue(out _gestoNovo);
+
+                    if (_gestoNovo!=null)
+                        gestosProcessados.Add(_gestoNovo);
+
+
+                    string comando = "";
+                    foreach (GestosBase gesto in gestosProcessados)
+                        comando += gesto.GetInfo();
+
+                    if (!string.IsNullOrEmpty(comando))
+                        Console.WriteLine($"Comando identificado: {comando}");
+
+                    EnumTipoAcaoGesto tipoAcaoGesto = InterpretaGesto(comando);
+
+                    if (tipoAcaoGesto != EnumTipoAcaoGesto.None)
+                    {
+                        ProcessaGesto(tipoAcaoGesto);
+                        LimpaListaGestos(ref gestosProcessados,true);
+                    }
+                        
+
+                    Thread.Sleep(350);
+                }
+            }
+            catch (Exception err)
+            {
+                _ = Task.Factory.StartNew(_ => ControleGestos(), TaskCreationOptions.LongRunning);
+            }
+        }
         private async void MensagensBengala()
         {
             FrameLeituraTag ultimoFrameLido = null;
@@ -373,11 +461,19 @@ namespace GuideMe
         {
             return await _bluetoothService.AcionarVibracaoBengala(_device, qtVibracao);
         }
-        //Swipe para direita
-        private void SwipeGestureRecognizer_Swiped_Direita(object sender, SwipedEventArgs e)
+
+        private void SwipeGestureRecognizer_Swiped(object sender, SwipedEventArgs e)
         {
+            
             if (_device != null)
-                FilaRequsicoesBengala.Add(new RequisicaoMotor() { Tipo = Enum.EnumTipoRequisicaoBengala.AcionarMotor, QtVibracoes = 2 });
+            {
+                Console.WriteLine("Swipe Direita");
+                FilaGestos.Enqueue(new GestoSwipeDireita());
+                Console.WriteLine("Swipe adicionado!");
+            }
+           
         }
+        //Swipe para direita
+
     }
 }
