@@ -28,6 +28,7 @@ namespace GuideMe
         private ConcurrentBag<RequisicaoBase> FilaRequsicoesBengala = new ConcurrentBag<RequisicaoBase>();
         private ConcurrentQueue<GestosBase> FilaGestos = new ConcurrentQueue<GestosBase>();
 
+
         private bool _threadMensagensBengala = false;
 
         public MainPage()
