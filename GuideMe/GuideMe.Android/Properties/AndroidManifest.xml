@@ -12,4 +12,9 @@
 	<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
   <uses-permission android:name="android.permission.BLUETOOTH_PRIVILEGED" />
   <!--<uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>-->
+	<queries>
+		<intent>
+			<action android:name="android.intent.action.TTS_SERVICE" />
+		</intent>
+	</queries>
 </manifest>

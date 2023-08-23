@@ -151,6 +151,16 @@ namespace GuideMe
         {
             try
             {
+                var locales = await TextToSpeech.GetLocalesAsync();
+                var locale = locales.FirstOrDefault();
+                var settings = new SpeechOptions()
+                {
+                    Volume = .75f,
+                    Pitch = 1.0f,
+                    Locale = locale
+                };
+                
+                await TextToSpeech.SpeakAsync("Bem vindo ao Guide me !");
                 _ = this.DisplayToastAsync("Procurando pela bengala... aguarde", 2000);
                 _device = await /*Task.Run(*/_bluetoothService.EscanearDispositivosEConectarAoESP32Async(StorageDAO.NomeBengalaBluetooth);/*)*/
                 if (_device != null)
