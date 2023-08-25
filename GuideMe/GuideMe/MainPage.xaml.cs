@@ -45,7 +45,7 @@ namespace GuideMe
         protected override void OnAppearing()
         {
             base.OnAppearing();
-            _ = TTSHelper.Speak("Bem vindo ao Gaidimi !");
+            _ = TTSHelper.Speak("Bem vindo ao Guide-me !");
             if (_device==null)
                 VerificaCondicoesBluetooth();
         }
