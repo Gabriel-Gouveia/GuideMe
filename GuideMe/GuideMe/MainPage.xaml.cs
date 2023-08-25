@@ -27,7 +27,7 @@ namespace GuideMe
         private string _versaoDoAndroid;
         private ConcurrentBag<RequisicaoBase> FilaRequsicoesBengala = new ConcurrentBag<RequisicaoBase>();
         private ConcurrentQueue<GestosBase> FilaGestos = new ConcurrentQueue<GestosBase>();
-
+        private SpeechOptions _configuracoesFalaLocal = null;
 
         private bool _threadMensagensBengala = false;
 
@@ -37,12 +37,16 @@ namespace GuideMe
             BindingContext = this;
             _bluetoothService = DependencyService.Get<IAndroidBluetoothService>();
             _versaoDoAndroid = _bluetoothService.ObterVersaoDoAndroid();
+            
         }
+
+        
 
         protected override void OnAppearing()
         {
             base.OnAppearing();
-            if(_device==null)
+            _ = TTSHelper.Speak("Bem vindo ao Gaidimi !");
+            if (_device==null)
                 VerificaCondicoesBluetooth();
         }
 
@@ -132,7 +136,7 @@ namespace GuideMe
                     ConectarNaBengala();
                 else
                 {
-                    _ = this.DisplayToastAsync("Nenhuma bengala foi configurada!", 2000);
+                    _ = TTSHelper.Speak("Nenhum dispositivo foi encontrado!");
                     this.btn_escanearBluetooth.IsVisible = true;
                 }
                     
@@ -152,29 +156,21 @@ namespace GuideMe
         {
             try
             {
-                var locales = await TextToSpeech.GetLocalesAsync();
-                var locale = locales.FirstOrDefault();
-                var settings = new SpeechOptions()
-                {
-                    Volume = .75f,
-                    Pitch = 1.0f,
-                    Locale = locale
-                };
-                
-                await TextToSpeech.SpeakAsync("Bem vindo ao Guide me !");
-                _ = this.DisplayToastAsync("Procurando pela bengala... aguarde", 2000);
+
+
+                _ = TTSHelper.Speak("Procurando dispositivos!");
                 _device = await /*Task.Run(*/_bluetoothService.EscanearDispositivosEConectarAoESP32Async(StorageDAO.NomeBengalaBluetooth);/*)*/
                 if (_device != null)
                 {
                     _threadMensagensBengala = true;
                     bool apagouMsg = await _bluetoothService.ApagaUltimaTagLida(_device);
                     await _bluetoothService.AcionarVibracaoBengala(_device, 2);
-                    _= this.DisplayToastAsync("bengala conectada com sucesso!", 2000);
+                    _ = TTSHelper.Speak("Dispositivo conectado com sucesso!");
                     InicializaControleBengala();
 
                 }
                 else
-                    await DisplayAlert("Aviso", "Não foi possível conectar com a bengala", "Ok");
+                    _ = TTSHelper.Speak("Não foi possível se conectar com o dispositivo");
 
             }
 
@@ -228,6 +224,8 @@ namespace GuideMe
             {
                 case "swdswd":
                     return EnumTipoAcaoGesto.VibrarMotor;
+                case "swbswbswb":
+                    return EnumTipoAcaoGesto.ProcurarDispositivos;
                 default:
                     return EnumTipoAcaoGesto.None;
 
@@ -242,6 +240,12 @@ namespace GuideMe
                 case EnumTipoAcaoGesto.VibrarMotor:
                 if (_device != null)
                     FilaRequsicoesBengala.Add(new RequisicaoMotor() { Tipo = Enum.EnumTipoRequisicaoBengala.AcionarMotor, QtVibracoes = 2 });
+                    break;
+                case EnumTipoAcaoGesto.ProcurarDispositivos:
+                    _device?.Dispose();
+                    _device = null;
+                    _threadMensagensBengala = false;
+                    VerificaCondicoesBluetooth();
                     break;
                 default:
                     return ;
@@ -311,10 +315,12 @@ namespace GuideMe
                                     break;
                                 case Enum.EnumTipoRequisicaoBengala.AcionarMotor:
                                     if (requisicao is RequisicaoMotor)
-                                        if (await VibrarMotor(2))
-                                            _=this.DisplayToastAsync("Comando enviado com sucesso", 800);
-                                        else
+                                    {
+                                        await TTSHelper.Speak("Testando dispositivo");
+                                        if (!await VibrarMotor(2))
                                             _ = this.DisplayToastAsync("Comando erro", 800);
+                                    }
+                                            
                                     break;
                             }
                         }
@@ -483,6 +489,16 @@ namespace GuideMe
                 Console.WriteLine("Swipe adicionado!");
             }
            
+        }
+
+        private void SwipeGestureRecognizer_Swiped_1(object sender, SwipedEventArgs e)
+        {
+            if (_device != null)
+            {
+                Console.WriteLine("Swipe Baixo");
+                FilaGestos.Enqueue(new GestoSwipeBaixo());
+                Console.WriteLine("Swipe Baixo!");
+            }
         }
         //Swipe para direita
 

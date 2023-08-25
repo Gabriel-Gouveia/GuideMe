@@ -7,6 +7,7 @@ namespace GuideMe.Enum
     public enum EnumTipoAcaoGesto
     {
         None,
-        VibrarMotor
+        VibrarMotor,
+        ProcurarDispositivos
     }
 }
