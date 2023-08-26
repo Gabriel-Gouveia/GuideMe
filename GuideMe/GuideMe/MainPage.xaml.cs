@@ -14,6 +14,7 @@ using System.Collections.Concurrent;
 using GuideMe.Gestos;
 using System.Linq;
 using GuideMe.Enum;
+using Microsoft.CognitiveServices.Speech;
 
 namespace GuideMe
 {
@@ -28,6 +29,9 @@ namespace GuideMe
         private ConcurrentBag<RequisicaoBase> FilaRequsicoesBengala = new ConcurrentBag<RequisicaoBase>();
         private ConcurrentQueue<GestosBase> FilaGestos = new ConcurrentQueue<GestosBase>();
         private SpeechOptions _configuracoesFalaLocal = null;
+        SpeechRecognizer recognizer;
+        IMicrophoneService micService;
+        bool isTranscribing = false;
 
         private bool _threadMensagensBengala = false;
 
@@ -36,11 +40,84 @@ namespace GuideMe
             InitializeComponent();          
             BindingContext = this;
             _bluetoothService = DependencyService.Get<IAndroidBluetoothService>();
+            micService = DependencyService.Resolve<IMicrophoneService>();
             _versaoDoAndroid = _bluetoothService.ObterVersaoDoAndroid();
             
         }
 
-        
+        private async void Transcrever()
+        {
+            bool isMicEnabled = await micService.GetPermissionAsync();
+            // EARLY OUT: make sure mic is accessible
+            if (!isMicEnabled)
+            {
+                _ = TTSHelper.Speak("Não possuo acesso ao microfone");
+                return;
+            }
+
+            // initialize speech recognizer 
+            if (recognizer == null)
+            {
+                var config = SpeechConfig.FromSubscription("daac6ced6fbc40f3a22528445a208b2c", "brazilsouth");
+                recognizer = new SpeechRecognizer(config,"pt-BR");
+                recognizer.Recognized += (obj, args) =>
+                {
+                    _ = this.DisplayToastAsync(args.Result.Text);
+                    UpdateTranscription(args.Result.Text);
+                };
+            }
+
+            // if already transcribing, stop speech recognizer
+            if (isTranscribing)
+            {
+                try
+                {
+                    await recognizer.StopContinuousRecognitionAsync();
+                }
+                catch (Exception ex)
+                {
+                    //UpdateTranscription(ex.Message);
+                }
+                isTranscribing = false;
+            }
+
+            // if not transcribing, start speech recognizer
+            else
+            {
+                Device.BeginInvokeOnMainThread(() =>
+                {
+                    InsertDateTimeRecord();
+                });
+                try
+                {
+                    await recognizer.StartContinuousRecognitionAsync();
+                }
+                catch (Exception ex)
+                {
+                    UpdateTranscription(ex.Message);
+                }
+                isTranscribing = true;
+            }
+            //UpdateDisplayState();
+
+        }
+        void UpdateTranscription(string newText)
+        {
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                if (!string.IsNullOrWhiteSpace(newText))
+                {
+                    Console.WriteLine(newText);
+                }
+            });
+        }
+
+        void InsertDateTimeRecord()
+        {
+            var msg = $"=================\n{DateTime.Now.ToString()}\n=================";
+            UpdateTranscription(msg);
+        }
+
 
         protected override void OnAppearing()
         {
@@ -220,12 +297,17 @@ namespace GuideMe
         }
         private EnumTipoAcaoGesto InterpretaGesto(string comandos)
         {
+            if (string.IsNullOrEmpty(comandos))
+                return EnumTipoAcaoGesto.None;
+
             switch (comandos)
             {
                 case "swdswd":
                     return EnumTipoAcaoGesto.VibrarMotor;
                 case "swbswbswb":
                     return EnumTipoAcaoGesto.ProcurarDispositivos;
+                case "swcswcswc":
+                    return EnumTipoAcaoGesto.ComandoVoz;
                 default:
                     return EnumTipoAcaoGesto.None;
 
@@ -246,6 +328,9 @@ namespace GuideMe
                     _device = null;
                     _threadMensagensBengala = false;
                     VerificaCondicoesBluetooth();
+                    break;
+                case EnumTipoAcaoGesto.ComandoVoz:
+                    Transcrever();
                     break;
                 default:
                     return ;
@@ -498,6 +583,16 @@ namespace GuideMe
                 Console.WriteLine("Swipe Baixo");
                 FilaGestos.Enqueue(new GestoSwipeBaixo());
                 Console.WriteLine("Swipe Baixo!");
+            }
+        }
+
+        private void SwipeGestureRecognizer_Swiped_2(object sender, SwipedEventArgs e)
+        {
+            if (_device != null)
+            {
+                Console.WriteLine("Swipe Cima");
+                FilaGestos.Enqueue(new GestoSwipeCima());
+                Console.WriteLine("Swipe Cima!");
             }
         }
         //Swipe para direita

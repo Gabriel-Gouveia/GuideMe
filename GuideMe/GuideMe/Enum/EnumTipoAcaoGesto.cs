@@ -8,6 +8,7 @@ namespace GuideMe.Enum
     {
         None,
         VibrarMotor,
-        ProcurarDispositivos
+        ProcurarDispositivos,
+        ComandoVoz
     }
 }
