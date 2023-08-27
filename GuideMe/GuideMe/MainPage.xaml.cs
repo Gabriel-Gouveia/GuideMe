@@ -15,6 +15,8 @@ using GuideMe.Gestos;
 using System.Linq;
 using GuideMe.Enum;
 using Microsoft.CognitiveServices.Speech;
+using GuideMe.STT;
+using static GuideMe.STT.STTHelper;
 
 namespace GuideMe
 {
@@ -29,9 +31,9 @@ namespace GuideMe
         private ConcurrentBag<RequisicaoBase> FilaRequsicoesBengala = new ConcurrentBag<RequisicaoBase>();
         private ConcurrentQueue<GestosBase> FilaGestos = new ConcurrentQueue<GestosBase>();
         private SpeechOptions _configuracoesFalaLocal = null;
-        SpeechRecognizer recognizer;
-        IMicrophoneService micService;
-        bool isTranscribing = false;
+        
+        
+       
 
         private bool _threadMensagensBengala = false;
 
@@ -40,67 +42,17 @@ namespace GuideMe
             InitializeComponent();          
             BindingContext = this;
             _bluetoothService = DependencyService.Get<IAndroidBluetoothService>();
-            micService = DependencyService.Resolve<IMicrophoneService>();
+            STTHelper.InitService();
+            STTHelper.OnComandoVozDetectado += ComandoVozDetectado;
             _versaoDoAndroid = _bluetoothService.ObterVersaoDoAndroid();
             
         }
 
-        private async void Transcrever()
+        void ComandoVozDetectado(object sender, ComandoVozEventArgs args)
         {
-            bool isMicEnabled = await micService.GetPermissionAsync();
-            // EARLY OUT: make sure mic is accessible
-            if (!isMicEnabled)
-            {
-                _ = TTSHelper.Speak("Não possuo acesso ao microfone");
-                return;
-            }
-
-            // initialize speech recognizer 
-            if (recognizer == null)
-            {
-                var config = SpeechConfig.FromSubscription("daac6ced6fbc40f3a22528445a208b2c", "brazilsouth");
-                recognizer = new SpeechRecognizer(config,"pt-BR");
-                recognizer.Recognized += (obj, args) =>
-                {
-                    _ = this.DisplayToastAsync(args.Result.Text);
-                    UpdateTranscription(args.Result.Text);
-                };
-            }
-
-            // if already transcribing, stop speech recognizer
-            if (isTranscribing)
-            {
-                try
-                {
-                    await recognizer.StopContinuousRecognitionAsync();
-                }
-                catch (Exception ex)
-                {
-                    //UpdateTranscription(ex.Message);
-                }
-                isTranscribing = false;
-            }
-
-            // if not transcribing, start speech recognizer
-            else
-            {
-                Device.BeginInvokeOnMainThread(() =>
-                {
-                    InsertDateTimeRecord();
-                });
-                try
-                {
-                    await recognizer.StartContinuousRecognitionAsync();
-                }
-                catch (Exception ex)
-                {
-                    UpdateTranscription(ex.Message);
-                }
-                isTranscribing = true;
-            }
-            //UpdateDisplayState();
-
+            Console.WriteLine("ENDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD");
         }
+
         void UpdateTranscription(string newText)
         {
             Device.BeginInvokeOnMainThread(() =>
@@ -330,7 +282,7 @@ namespace GuideMe
                     VerificaCondicoesBluetooth();
                     break;
                 case EnumTipoAcaoGesto.ComandoVoz:
-                    Transcrever();
+                    STTHelper.StartListening();
                     break;
                 default:
                     return ;
