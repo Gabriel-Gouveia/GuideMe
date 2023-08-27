@@ -19,13 +19,19 @@ namespace GuideMe.STT
             public DateTime TimeReached { get; private set; }
             public EnumComandoVoz Comando { get; set; }
 
-            public ComandoVozEventArgs(double threshold, EnumComandoVoz comando)
+            public string Auxiliar { get; set; }
+            public string Lugar { get; set; }
+
+            public ComandoVozEventArgs(double threshold, EnumComandoVoz comando,string auxiliar,string lugar)
             {
                 this.Threshold = threshold;
                 this.Comando = comando;
                 this.TimeReached = DateTime.Now;
+                this.Auxiliar = auxiliar;
+                this.Lugar = lugar;
             }
         }
+        static Dictionary<string, string> ComandoVoz_Lugar = new Dictionary<string, string>();
         static SpeechRecognizer recognizer;
         public static IMicrophoneService micService { get; private set; }
         public static string SubscriptionKey { get; private set; } = "daac6ced6fbc40f3a22528445a208b2c";
@@ -40,25 +46,7 @@ namespace GuideMe.STT
 
         public static Dictionary<EnumComandoVoz, List<string>> ComandosVoz = null;
 
-        static void ProcessarAudio2(string fala,string pattern)
-        {
-            string[] tokensProcurados = GetTokens(pattern);
-            string[] tokensFala = GetTokens(fala);
-            int tokensEncontrados = 0;
-            int posAnalisada = 0;
-            for (int i = 0; i < tokensProcurados.Length; i++)
-            {
-                for (int n = posAnalisada; n < tokensFala.Length; n++)
-                {
-                    if (GetSimiliaridade(tokensFala[n], tokensProcurados[i]) >= Threshold)
-                    {
-                        tokensEncontrados++;
-                        break;
-                    }
-
-                }
-            }
-        }
+      
         static string[] VariarString(string pattern, string[] argumentos)
         {
             string[] retornos = new string[argumentos.Length];
@@ -153,28 +141,114 @@ namespace GuideMe.STT
             return retorno;
 
         }
+        private static List<string> GetPatternsListarLugares()
+        {
+            List<string> retorno = new List<string>();
+            string pattern1 = "Me fale {0} lugares";
+            string[] variacoes1 = VariarString(pattern1, new string[] { "", "o", "os","a","as" });
+            foreach (string s in variacoes1)
+                retorno.Add(s);
+
+            string pattern2 = "Quais são {0} lugares disponiveis";
+            variacoes1 = VariarString(pattern2, new string[] { "", "o", "os","a","as" });
+
+            foreach (string s in variacoes1)
+                retorno.Add(s);
+
+            return retorno;
+
+        }
         private static void PreencheComandosVoz()
         {
             if (ComandosVoz == null)
             {
                 ComandosVoz = new Dictionary<EnumComandoVoz, List<string>>();
                 ComandosVoz.Add(EnumComandoVoz.TestarDispositivo, GetPatternsTestarDispositivo());
+                ComandosVoz.Add(EnumComandoVoz.ListarLugares, GetPatternsListarLugares());
+                
             }
+        }
+
+        private static List<string> GetPatternsIrPara(List<string> lugares)
+        {
+            ComandoVoz_Lugar = new Dictionary<string, string>();
+            List<string> retorno = new List<string>();
+            string pattern1 = "Ir para {0}";
+            string[] variacoes1 = VariarString(pattern1, new string[] { "", "o", "a", });
+            foreach (string s in variacoes1)
+                foreach (string lugar in lugares)
+                {
+                    retorno.Add(s + $" {lugar}");
+                    ComandoVoz_Lugar.Add(s + $" {lugar}", lugar);
+                }
+                    
+
+            string pattern2 = "quero ir {0}";
+            variacoes1 = VariarString(pattern2, new string[] { "", "para o", "para a","ao","na","nas","no" });
+
+            foreach (string s in variacoes1)
+                foreach (string lugar in lugares)
+                {
+                    retorno.Add(s + $" {lugar}");
+                    ComandoVoz_Lugar.Add(s + $" {lugar}", lugar);
+                }
+
+            return retorno;
+
+        }
+        public static void RegistrarLugares(List<string> lugares)
+        {
+
+            PreencheComandosVoz();
+            if (ComandosVoz.ContainsKey(EnumComandoVoz.Irpara))
+                ComandosVoz[EnumComandoVoz.Irpara] = GetPatternsIrPara(lugares);
+            else
+                ComandosVoz.Add(EnumComandoVoz.Irpara, GetPatternsIrPara(lugares));
+
         }
         private static void ProcessarAudio(string fala)
         {
             foreach (KeyValuePair<EnumComandoVoz, List<string>> value in ComandosVoz)
             {
+                double limite = 0.7;
+                if (value.Key == EnumComandoVoz.Irpara)
+                    limite = 0.9;
+                
                 foreach (string s in value.Value)
                 {
                     double threshold = GetSimiliaridade(fala.ToLower(), s.ToLower());
-                    if (threshold >= 0.7)
+                    if (threshold >= limite)
                     {
-                        OnComandoVozDetectado?.Invoke(new object(),
-                            new ComandoVozEventArgs(threshold, EnumComandoVoz.TestarDispositivo));
+                        string lugar = "";
+                        if (value.Key == EnumComandoVoz.Irpara)
+                        {
+                            if (ComandoVoz_Lugar.ContainsKey(s))
+                            {
+                                lugar = ComandoVoz_Lugar[s];
+                                if (fala.ToLower().Contains(lugar.ToLower()))
+                                {
+                                    OnComandoVozDetectado?.Invoke(new object(),
+                                       new ComandoVozEventArgs(threshold, value.Key, s, lugar));
+                                    StopListening();
+                                    break;
+                                }
+                                   
+                            }
+                               
 
-                        StopListening();
-                        break;
+                        }
+                        else
+                        {
+                            OnComandoVozDetectado?.Invoke(new object(),
+                             new ComandoVozEventArgs(threshold, value.Key, s, lugar));
+                            StopListening();
+                            break;
+
+                        }
+
+                        
+
+                        
                     }
                 }
             }

@@ -6,6 +6,8 @@ namespace GuideMe.Enum
 {
     public enum EnumComandoVoz
     {
-        TestarDispositivo
+        TestarDispositivo,
+        Irpara,
+        ListarLugares
     }
 }

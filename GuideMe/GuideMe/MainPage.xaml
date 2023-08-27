@@ -4,7 +4,7 @@
              Style="{StaticResource MainColorBackground}"
              x:Class="GuideMe.MainPage">
 
-    <StackLayout>
+    <StackLayout HorizontalOptions="CenterAndExpand" VerticalOptions="StartAndExpand">
         <Frame BackgroundColor="Black">
             <StackLayout Orientation="Horizontal"
                          Margin="100,0,0,0">
@@ -12,41 +12,23 @@
                 <Label Text="Guide Me" FontSize="20"></Label>
             </StackLayout>
         </Frame>
-        <Entry Margin="15,300,10,0" 
-               Placeholder="Digite aqui o ID do ambiente" 
-               FontSize="25" 
-               TextColor="White" 
-               PlaceholderColor="White"
-               IsVisible="false"
-               HorizontalTextAlignment="Center"></Entry>
-        <Button Text="Procurar o local" 
-                FontSize="25" 
-                Margin="30,0,30,0" 
-                CornerRadius="20"
-                BackgroundColor="#0c0c0d"
-                IsVisible="false"
-                TextColor="White"></Button>
-        <Button Text="Escanear dispositivos"
-                x:Name="btn_escanearBluetooth"
-                FontSize="25" 
-                Margin="30,0,30,0" 
-                CornerRadius="20"
-                BackgroundColor="#0c0c0d"
-                Clicked="btn_escanearBluetooth_Clicked"
-                IsVisible="false"
-                TextColor="White">
+
+        <Frame BackgroundColor="#353741">
+            <StackLayout VerticalOptions="CenterAndExpand">
+                <Label x:Name="lbDica" 
+                       Text="Deslize para a direita 2 vezes para testar o dispositivo!"
+                       FontSize="30" 
+                       TextColor="White"
+                       FontAttributes="Bold"
+                       HorizontalTextAlignment="Center"
+                       HorizontalOptions="Center"
+                       Margin="10">
+                </Label>
+                <Image x:Name="imagem" VerticalOptions="CenterAndExpand"></Image>
+            </StackLayout>
            
-        </Button>
-        <Button Text="Vibrar motor"
-                x:Name="btn_vibrarMotor"
-                FontSize="25" 
-                Margin="30,0,30,0"
-                IsVisible="false"
-                CornerRadius="20"
-                BackgroundColor="#0c0c0d"
-                Clicked="btn_vibrarMotor_Clicked"
-                TextColor="White">
-        </Button>
+        </Frame>
+       
 
         <StackLayout.GestureRecognizers>
             <SwipeGestureRecognizer Direction="Right" Swiped="SwipeGestureRecognizer_Swiped"></SwipeGestureRecognizer>

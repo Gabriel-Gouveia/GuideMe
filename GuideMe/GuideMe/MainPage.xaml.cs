@@ -17,6 +17,7 @@ using GuideMe.Enum;
 using Microsoft.CognitiveServices.Speech;
 using GuideMe.STT;
 using static GuideMe.STT.STTHelper;
+using System.Diagnostics;
 
 namespace GuideMe
 {
@@ -31,10 +32,8 @@ namespace GuideMe
         private ConcurrentBag<RequisicaoBase> FilaRequsicoesBengala = new ConcurrentBag<RequisicaoBase>();
         private ConcurrentQueue<GestosBase> FilaGestos = new ConcurrentQueue<GestosBase>();
         private SpeechOptions _configuracoesFalaLocal = null;
-        
-        
-       
 
+        private List<string> lugaresMock = new List<string>();
         private bool _threadMensagensBengala = false;
 
         public MainPage()
@@ -45,12 +44,98 @@ namespace GuideMe
             STTHelper.InitService();
             STTHelper.OnComandoVozDetectado += ComandoVozDetectado;
             _versaoDoAndroid = _bluetoothService.ObterVersaoDoAndroid();
-            
+            lugaresMock.Add("Lojas Americanas");
+            lugaresMock.Add("Banheiro");
+            lugaresMock.Add("Havana");
+            lugaresMock.Add("espoleto");
+            lugaresMock.Add("chiquinho");
+            lugaresMock.Add("mequi");
+            lugaresMock.Add("burguer king");
+            STTHelper.RegistrarLugares(lugaresMock);
+            _ = Task.Factory.StartNew(_ => ControlePaginaPrincipal(), TaskCreationOptions.LongRunning);
+
         }
 
-        void ComandoVozDetectado(object sender, ComandoVozEventArgs args)
+        private async void ControlePaginaPrincipal()
         {
-            Console.WriteLine("ENDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD");
+            string[,] dicas = new string[,] 
+            { { "gifDireita.gif","Deslize 2 vezes para a direita para testar o dispositivo!"},
+              { "gifCima.gif","Deslize 3 vezes para cima para iniciar um comando de voz!"},
+              { "gifBaixo.gif","Deslize 3 vezes para baixo para procurar e se conectar com outro dispositivo!"}};
+            int pos = 0;
+            Stopwatch sw = new Stopwatch();
+            try
+            {
+                bool forcaRecarregar = false;
+                bool estavaGravando = false;
+                while (true)
+                {
+                    if (!STTHelper.IsTranscribbing && (!sw.IsRunning || sw.ElapsedMilliseconds >= 8000 || forcaRecarregar))
+                    {
+                        estavaGravando = false;
+                        forcaRecarregar = false;
+                        Device.BeginInvokeOnMainThread(() =>
+                        {
+                            try
+                            {
+                                lbDica.IsVisible = true;
+                                lbDica.Text = dicas[pos, 1];
+                                imagem.Source = dicas[pos, 0];
+                                imagem.IsAnimationPlaying = true;
+                                sw.Restart();
+                            }
+                            catch (Exception e)
+                            { 
+                            }
+                        });
+
+                        if (pos + 1 <3)
+                            pos++;
+                        else
+                            pos = 0;
+                    }
+                    if (!STTHelper.IsTranscribbing && estavaGravando)
+                        forcaRecarregar = true;
+
+                    if (STTHelper.IsTranscribbing && !estavaGravando)
+                    {
+                        estavaGravando = true;
+                        Device.BeginInvokeOnMainThread(() =>
+                        {
+                            try
+                            {
+                                lbDica.IsVisible = false;
+                                imagem.Source = "gifOuvindo.gif";
+                                imagem.IsAnimationPlaying = true;
+                            }
+                            catch (Exception e)
+                            {
+                            }
+                        });
+                    }
+                    
+
+                    Thread.Sleep(350);
+                }
+            }
+            catch (Exception err)
+            {
+                _ = Task.Factory.StartNew(_ => ControlePaginaPrincipal(), TaskCreationOptions.LongRunning);
+            }
+        }
+
+        async void ComandoVozDetectado(object sender, ComandoVozEventArgs args)
+        {
+            if (args.Comando == EnumComandoVoz.Irpara)
+                _ = TTSHelper.Speak($"Comando de voz detectado: {args.Comando.ToString()} {args.Lugar}");
+            else if (args.Comando != EnumComandoVoz.ListarLugares)
+                _ = TTSHelper.Speak($"Comando de voz detectado: {args.Comando.ToString()}");
+            else 
+            {
+                await TTSHelper.Speak($"Comando de voz detectado: {args.Comando.ToString()}");
+                foreach(string s in lugaresMock)
+                    await TTSHelper.Speak(s);
+            }
         }
 
         void UpdateTranscription(string newText)
@@ -166,7 +251,6 @@ namespace GuideMe
                 else
                 {
                     _ = TTSHelper.Speak("Nenhum dispositivo foi encontrado!");
-                    this.btn_escanearBluetooth.IsVisible = true;
                 }
                     
             }
@@ -174,8 +258,6 @@ namespace GuideMe
 
         private void InicializaControleBengala()
         {
-            this.btn_escanearBluetooth.IsVisible = true;
-            this.btn_vibrarMotor.IsVisible = true;
             _ = Task.Factory.StartNew(_ => MensagensBengala(), TaskCreationOptions.LongRunning);
             _ = Task.Factory.StartNew(_ => RequisitaLeiturasTags(), TaskCreationOptions.LongRunning);
             _ = Task.Factory.StartNew(_ => ControleGestos(), TaskCreationOptions.LongRunning);
