@@ -280,10 +280,15 @@ namespace GuideMe.STT
             {
                 InitializeSpeech();
                 if (!IsTranscribbing)
+                {
+                    await TTSHelper.Speak("Me diga o que você precisa");
+
                     _ = Task.Factory.StartNew(_ => Listen(), TaskCreationOptions.LongRunning);
 
-                Thread.Sleep(100);
-                _ = Task.Factory.StartNew(_ => TimeOutListen(), TaskCreationOptions.LongRunning);
+                    Thread.Sleep(100);
+                    _ = Task.Factory.StartNew(_ => TimeOutListen(), TaskCreationOptions.LongRunning);
+                }
+                 
 
             }
         }

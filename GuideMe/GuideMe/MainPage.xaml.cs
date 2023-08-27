@@ -600,34 +600,25 @@ namespace GuideMe
 
         private void SwipeGestureRecognizer_Swiped(object sender, SwipedEventArgs e)
         {
-            
-            if (_device != null)
-            {
-                Console.WriteLine("Swipe Direita");
-                FilaGestos.Enqueue(new GestoSwipeDireita());
-                Console.WriteLine("Swipe adicionado!");
-            }
-           
+
+            Console.WriteLine("Swipe Direita");
+            FilaGestos.Enqueue(new GestoSwipeDireita());
+            Console.WriteLine("Swipe adicionado!");
+
         }
 
         private void SwipeGestureRecognizer_Swiped_1(object sender, SwipedEventArgs e)
         {
-            if (_device != null)
-            {
-                Console.WriteLine("Swipe Baixo");
-                FilaGestos.Enqueue(new GestoSwipeBaixo());
-                Console.WriteLine("Swipe Baixo!");
-            }
+            Console.WriteLine("Swipe Baixo");
+            FilaGestos.Enqueue(new GestoSwipeBaixo());
+            Console.WriteLine("Swipe Baixo!");
         }
 
         private void SwipeGestureRecognizer_Swiped_2(object sender, SwipedEventArgs e)
         {
-            if (_device != null)
-            {
-                Console.WriteLine("Swipe Cima");
-                FilaGestos.Enqueue(new GestoSwipeCima());
-                Console.WriteLine("Swipe Cima!");
-            }
+            Console.WriteLine("Swipe Cima");
+            FilaGestos.Enqueue(new GestoSwipeCima());
+            Console.WriteLine("Swipe Cima!");
         }
         //Swipe para direita
 
