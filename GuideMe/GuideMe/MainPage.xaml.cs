@@ -53,6 +53,7 @@ namespace GuideMe
             lugaresMock.Add("burguer king");
             STTHelper.RegistrarLugares(lugaresMock);
             _ = Task.Factory.StartNew(_ => ControlePaginaPrincipal(), TaskCreationOptions.LongRunning);
+            _ = Task.Factory.StartNew(_ => ControleGestos(), TaskCreationOptions.LongRunning);
 
         }
 
@@ -251,6 +252,7 @@ namespace GuideMe
                 else
                 {
                     _ = TTSHelper.Speak("Nenhum dispositivo foi encontrado!");
+                    ProcurarDispositivo();
                 }
                     
             }
@@ -260,7 +262,7 @@ namespace GuideMe
         {
             _ = Task.Factory.StartNew(_ => MensagensBengala(), TaskCreationOptions.LongRunning);
             _ = Task.Factory.StartNew(_ => RequisitaLeiturasTags(), TaskCreationOptions.LongRunning);
-            _ = Task.Factory.StartNew(_ => ControleGestos(), TaskCreationOptions.LongRunning);
+            
             
         }
         private async void ConectarNaBengala()
@@ -377,7 +379,7 @@ namespace GuideMe
             List<GestosBase> gestosProcessados =  new List<GestosBase>();
             try
             {
-                while (_threadMensagensBengala && _device != null)
+                while (true)
                 {
                     LimpaListaGestos(ref gestosProcessados);
                     GestosBase _gestoNovo = null;
@@ -530,24 +532,28 @@ namespace GuideMe
             }
             return frame==null ?null : (FrameLeituraTag)frame.Clone();
         }
-      
 
-        private async void btn_escanearBluetooth_Clicked(object sender, EventArgs e)
+        private async void ProcurarDispositivo()
         {
-            //await Navigation.PushAsync(new DispositivosBluetooth(_bluetoothService));
-
             if (_bluetoothService != null)
             {
+                _=TTSHelper.Speak("Procurando dispositivo");    
                 if (_bluetoothService is IAndroidBluetoothService)
                 {
                     (_bluetoothService as IAndroidBluetoothService).OnBluetoothScanTerminado -= MainPage_OnBluetoothScanTerminado;
                     (_bluetoothService as IAndroidBluetoothService).OnBluetoothScanTerminado += MainPage_OnBluetoothScanTerminado;
                     _ = _bluetoothService.EscanearDispositivosAsync();
-                    _=this.DisplayToastAsync("Procurando dispositivos..", 2000);
+                    _ = this.DisplayToastAsync("Procurando dispositivos..", 2000);
                 }
 
 
             }
+        }
+        private async void btn_escanearBluetooth_Clicked(object sender, EventArgs e)
+        {
+            //await Navigation.PushAsync(new DispositivosBluetooth(_bluetoothService));
+
+            
 
         }
 
