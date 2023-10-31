@@ -165,8 +165,8 @@ namespace GuideMe.STT
                 ComandosVoz = new Dictionary<EnumComandoVoz, List<string>>();
                 ComandosVoz.Add(EnumComandoVoz.TestarDispositivo, GetPatternsTestarDispositivo());
                 ComandosVoz.Add(EnumComandoVoz.ListarLugares, GetPatternsListarLugares());
-                
             }
+            
         }
 
         private static List<string> GetPatternsIrPara(List<string> lugares)

@@ -18,6 +18,8 @@ using Microsoft.CognitiveServices.Speech;
 using GuideMe.STT;
 using static GuideMe.STT.STTHelper;
 using System.Diagnostics;
+using GuideMe.Utils;
+using GuideMe.Navegacao;
 
 namespace GuideMe
 {
@@ -35,6 +37,7 @@ namespace GuideMe
 
         private List<string> lugaresMock = new List<string>();
         private bool _threadMensagensBengala = false;
+        NavegacaoController navegacao = new NavegacaoController();
 
         public MainPage()
         {
@@ -43,7 +46,7 @@ namespace GuideMe
             _bluetoothService = DependencyService.Get<IAndroidBluetoothService>();
             STTHelper.InitService();
             STTHelper.OnComandoVozDetectado += ComandoVozDetectado;
-            _versaoDoAndroid = _bluetoothService.ObterVersaoDoAndroid();
+            /*_versaoDoAndroid = _bluetoothService.ObterVersaoDoAndroid();
             lugaresMock.Add("Lojas Americanas");
             lugaresMock.Add("Banheiro");
             lugaresMock.Add("Havana");
@@ -51,10 +54,9 @@ namespace GuideMe
             lugaresMock.Add("chiquinho");
             lugaresMock.Add("mequi");
             lugaresMock.Add("burguer king");
-            STTHelper.RegistrarLugares(lugaresMock);
+            STTHelper.RegistrarLugares(lugaresMock);*/
             _ = Task.Factory.StartNew(_ => ControlePaginaPrincipal(), TaskCreationOptions.LongRunning);
-            _ = Task.Factory.StartNew(_ => ControleGestos(), TaskCreationOptions.LongRunning);
-
+            _ = Task.Factory.StartNew(_ => ControleGestos(), TaskCreationOptions.LongRunning);        
         }
 
         private async void ControlePaginaPrincipal()
@@ -128,14 +130,21 @@ namespace GuideMe
         async void ComandoVozDetectado(object sender, ComandoVozEventArgs args)
         {
             if (args.Comando == EnumComandoVoz.Irpara)
-                _ = TTSHelper.Speak($"Comando de voz detectado: {args.Comando.ToString()} {args.Lugar}");
+            {
+                //_ = TTSHelper.Speak($"Comando de voz detectado: {args.Comando.ToString()} {args.Lugar}");
+                await TTSHelper.Speak($"Ok!. Calculando rota para: {args.Lugar}");
+                navegacao.CalcularRota(args.Lugar);
+            }
+               
             else if (args.Comando != EnumComandoVoz.ListarLugares)
+            {
                 _ = TTSHelper.Speak($"Comando de voz detectado: {args.Comando.ToString()}");
-            else 
+            }
+            else
             {
                 await TTSHelper.Speak($"Comando de voz detectado: {args.Comando.ToString()}");
-                foreach(string s in lugaresMock)
-                    await TTSHelper.Speak(s);
+                foreach (var lugar in navegacao.All_Lugares_Navegaveis)
+                    await TTSHelper.Speak(lugar.Nome);
             }
         }
 
@@ -495,9 +504,6 @@ namespace GuideMe
 
                         leitura += aux + " ";
                     }
-                    //leitura = ConvertHex(leitura);
-
-                    //leitura = System.Text.Encoding.ASCII.GetString(dadoRFID);
 
                     leitura = leitura.ToUpper().Trim();
                     string[] tokensFinais = leitura.Split('-');
@@ -516,6 +522,9 @@ namespace GuideMe
                                     frame = (frameLido as FrameLeituraTag);
                                     frame.IDMensagem = tokensFinais[1];
                                     _ = this.DisplayToastAsync($"Tag lida: {frame.TagID} ", 800);
+
+                                    navegacao.SetLocal(frame.TagID);
+
                                 }
 
 
@@ -625,6 +634,11 @@ namespace GuideMe
             Console.WriteLine("Swipe Cima");
             FilaGestos.Enqueue(new GestoSwipeCima());
             Console.WriteLine("Swipe Cima!");
+        }
+
+        private void Button_Clicked(object sender, EventArgs e)
+        {
+            navegacao.CalcularRota("Luga3");
         }
         //Swipe para direita
 

@@ -1,4 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+	<Target Name="AddUserSecrets" BeforeTargets="PrepareForBuild" Condition=" '$(Configuration)' == 'Debug' And '$(UserSecretsId)' != '' ">
+		<PropertyGroup>
+			<UserSecretsFilePath Condition=" '$(OS)' == 'Windows_NT' ">
+				$([System.Environment]::GetFolderPath(SpecialFolder.UserProfile))\AppData\Roaming\Microsoft\UserSecrets\$(UserSecretsId)\secrets.json
+			</UserSecretsFilePath>
+			<UserSecretsFilePath Condition=" '$(OS)' == 'Unix' ">
+				$([System.Environment]::GetFolderPath(SpecialFolder.UserProfile))/.microsoft/usersecrets/$(UserSecretsId)/secrets.json
+			</UserSecretsFilePath>
+		</PropertyGroup>
+		<ItemGroup>
+			<EmbeddedResource Include="$(UserSecretsFilePath)" Condition="Exists($(UserSecretsFilePath))" />
+		</ItemGroup>
+	</Target>
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -6,6 +19,7 @@
     <SignAssembly>false</SignAssembly>
     <AssemblyOriginatorKeyFile>CodeSigningGuideMe.pfx</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
+    <UserSecretsId>1b2cf430-a33b-47f2-b41b-60e20fbb4795</UserSecretsId>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -15,6 +29,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.31.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Plugin.BLE" Version="2.1.3" />
     <PackageReference Include="Xamarin.CommunityToolkit" Version="1.2.0" />
     <PackageReference Include="Xamarin.Forms" Version="5.0.0.2012" />

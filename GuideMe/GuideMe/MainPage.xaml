@@ -15,6 +15,7 @@
 
         <Frame BackgroundColor="#353741">
             <StackLayout VerticalOptions="CenterAndExpand">
+                <Button Text="Teste" Clicked="Button_Clicked"></Button>
                 <Label x:Name="lbDica" 
                        Text="Deslize para a direita 2 vezes para testar o dispositivo!"
                        FontSize="30" 
@@ -25,6 +26,7 @@
                        Margin="10">
                 </Label>
                 <Image x:Name="imagem" VerticalOptions="CenterAndExpand"></Image>
+                
             </StackLayout>
            
         </Frame>

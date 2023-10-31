@@ -128,7 +128,7 @@ namespace GuideMe.Bengala
         {
             TipoFrame = TrataFrames.LeituraTag;
             RSSI = _rssi;
-            TagID = _tagId;
+            TagID = _tagId.Replace(" ", "");
             PC = _pc;
             CRC = crc;
         }
@@ -137,7 +137,7 @@ namespace GuideMe.Bengala
         {
             TipoFrame = TrataFrames.LeituraTag;
             RSSI = frame.RSSI;
-            TagID = frame.TagID;
+            TagID = frame.TagID.Replace(" ", "");
             PC = frame.PC;
             CRC = frame.CRC;
             IDMensagem = frame.IDMensagem;
