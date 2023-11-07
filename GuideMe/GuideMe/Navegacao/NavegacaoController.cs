@@ -28,6 +28,7 @@ namespace GuideMe.Navegacao
 
         public List<TagTO> RotaAtual { get; private set; }
         public int PosAtualRota { get; private set; }
+        private string _lugarDesejado = null;
 
         private bool GetDadosFromServer(string tag)
         {
@@ -36,40 +37,48 @@ namespace GuideMe.Navegacao
                 var data = APIHelper.GetEstabelecimentoTags(tag);
                 if (data != null)
                 {
-                    LocalDefinido = true;
                     UltimaTagLida = data.Tags.Find(x => x.TagId == tag);
-                    DadosEstabelecimento = data;
-                    grafo = new GraphDFS(DadosEstabelecimento);
-                    All_Lugares = DadosEstabelecimento.Lugares;
-                    All_Lugares_Navegaveis = new List<LugaresTO>();
-                    All_Itens = DadosEstabelecimento.Itens;
-                    All_Itens_Navegaveis = new List<ItensTO>();
-                    List<string> lugaresString = new List<string>();
-
-                    foreach (var lugar in All_Lugares)
+                    if (UltimaTagLida != null)
                     {
-                        if (lugar.Navegavel)
+                        LocalDefinido = true;
+                        DadosEstabelecimento = data;
+                        grafo = new GraphDFS(DadosEstabelecimento);
+                        All_Lugares = DadosEstabelecimento.Lugares;
+                        All_Lugares_Navegaveis = new List<LugaresTO>();
+                        All_Itens = DadosEstabelecimento.Itens;
+                        All_Itens_Navegaveis = new List<ItensTO>();
+                        List<string> lugaresString = new List<string>();
+
+                        foreach (var lugar in All_Lugares)
                         {
-                            All_Lugares_Navegaveis.Add(lugar);
-                            lugaresString.Add(lugar.Nome);
+                            if (lugar.Navegavel)
+                            {
+                                All_Lugares_Navegaveis.Add(lugar);
+                                lugaresString.Add(lugar.Nome);
+                            }
                         }
+
+                        foreach (var item in All_Itens)
+                            if (item.Navegavel)
+                                All_Itens_Navegaveis.Add(item);
+
+                        STTHelper.RegistrarLugares(lugaresString);
+
+                        if (!string.IsNullOrEmpty(data.NomeEstabelecimento)) 
+                        _ = TTSHelper.Speak($"Bem vindo à {data.NomeEstabelecimento}");
+
+                        DescreverTag();
+
+                        return true;
                     }
-
-
-                    foreach (var item in All_Itens)
-                        if (item.Navegavel)
-                            All_Itens_Navegaveis.Add(item);
-
-                    STTHelper.RegistrarLugares(lugaresString);
-
-                    DescreverTag();
-
-                    return true;
+                    
                 }
             }
             catch (Exception err)
             {
             }
+
+            _ = TTSHelper.Speak("Não consegui encontrar informações sobre o seu local!");
             return false;
         }
 
@@ -123,6 +132,10 @@ namespace GuideMe.Navegacao
                     return EnumDirecao.Esquerda;
                 case EnumDirecao.Esquerda:
                     return EnumDirecao.Direita;
+                case EnumDirecao.Frente:
+                    return EnumDirecao.Tras;
+                case EnumDirecao.Tras:
+                    return EnumDirecao.Frente;
 
             }
 
@@ -140,6 +153,10 @@ namespace GuideMe.Navegacao
                     return "Vire à direita";
                 case EnumDirecao.Esquerda:
                     return "Vire à esquerda";
+                case EnumDirecao.Frente:
+                    return "Siga em frente";
+                case EnumDirecao.Tras:
+                    return "Vire para trás e continue";
             }
 
             return null;
@@ -163,7 +180,9 @@ namespace GuideMe.Navegacao
                     if (pos == RotaAtual.Count - 1)
                     {
                         _ = TTSHelper.Speak("Você chegou ao seu destino!");
+                        DescreverTag();
                         RotaAtual.Clear();
+                        _lugarDesejado = null;
                         RotaAtual = null;
                     }
                     else
@@ -174,7 +193,14 @@ namespace GuideMe.Navegacao
                             DeterminarDirecao(tag, proximaTag, relacionamento);
                     }
 
-                    
+
+                }
+                else
+                {
+                    _ = TTSHelper.Speak("Ops! vou recalcular a rota!");
+                    RotaAtual.Clear();
+                    RotaAtual = null;
+                    CalcularRota(_lugarDesejado);
                 }
                 //TODO RECALCULANDO
             }
@@ -196,6 +222,7 @@ namespace GuideMe.Navegacao
                         {
                             await TTSHelper.Speak("Rota calculada com sucesso!");                          
                             RotaAtual = rota;
+                            _lugarDesejado = lugarDesejado;
                             PosAtualRota = 0;
                             DescreverDirecao();
 
@@ -213,6 +240,7 @@ namespace GuideMe.Navegacao
         {
             if (!LocalDefinido)
             {
+                _ = TTSHelper.Speak("Por favor aguarde! estou verificando dados do seu local!");
                 GetDadosFromServer(tag);
             }
             else if (DadosEstabelecimento != null)
@@ -233,11 +261,11 @@ namespace GuideMe.Navegacao
                 }
                 else
                 {
-                    //tag não encontrada... tenta encontrar no servidor uma nova relação
+                   /* //tag não encontrada... tenta encontrar no servidor uma nova relação
                     if (GetDadosFromServer(tag))
                     {
 
-                    }
+                    }*/
                 }
             }
 

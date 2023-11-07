@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,6 +11,8 @@ namespace GuideMe
     public static class TTSHelper
     {
         public static SpeechOptions ConfiguracoesFala { get; private set; } = null;
+        private static string UltimaFala = null;
+        private static Stopwatch swUltimaFala = new Stopwatch();
         public static async Task<bool> Speak(string text)
         {
             bool retorno = false;

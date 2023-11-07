@@ -104,6 +104,7 @@ namespace GuideMe.Droid
         /// <returns></returns>
         public async Task<PermissionStatus> ObtemPermissaoLocalizacao()
         {
+           
             PermissionStatus permissionStatus = PermissionStatus.Unknown;
             if (DeviceInfo.Platform == DevicePlatform.Android)
             {

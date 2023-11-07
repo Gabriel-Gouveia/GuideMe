@@ -1,4 +1,5 @@
-﻿using GuideMe.TOs;
+﻿using GuideMe.Enum;
+using GuideMe.TOs;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -12,13 +13,15 @@ namespace GuideMe.Utils
     static public class APIHelper
     {
         //private const string SiteURL = "https://guideme.azurewebsites.net";
-        private const string SiteURL = "http://192.168.0.133:5254";
+        private const string SiteURL = "http://192.168.64.222:5254";
         private const string LoginApi = "/api/Login/v1/login";
         private const string GetTagsEstabelecimento = "/api/Tag/v1/GetTagData";
         private static string tokenAPI = "";
         private static HttpClient client = null;
         private static HttpClientHandler httpClientHandler = null;
         private static LoginRequestTO _loginRequest;
+        private static bool _MocarDados = true;
+
 
         private static HttpClient VerificaHttpClient()
         {
@@ -40,17 +43,125 @@ namespace GuideMe.Utils
 
             return client;
         }
+        private static EstabelecimentoTagsTO GetMockDados()
+        {
+            EstabelecimentoTagsTO retorno = new EstabelecimentoTagsTO();
+
+            retorno.NomeEstabelecimento = "Fundação Dorina Novil";
+
+            List<TagTO> Tags = new List<TagTO>();
+
+            TagTO tag1 = new TagTO();
+            tag1.Id = 16;
+            tag1.TagId = "E2801191A502000000155008";
+            tag1.EstabelecimentoId = 16;
+            tag1.tipoTag = (int)EnumTipoTag.localizacao;
+            tag1.Nome = "tag01";
+            tag1.TagsPai = new List<TagsPaiTO>();
+
+            TagTO tag2 = new TagTO();
+            tag2.Id = 17;
+            tag2.TagId = "E2801191A502000000155009";
+            tag2.EstabelecimentoId = 16;
+            tag2.tipoTag = (int)EnumTipoTag.localizacao;
+            tag2.Nome = "tag02";
+            tag2.TagsPai = new List<TagsPaiTO>();
+
+            TagTO tag3 = new TagTO();
+            tag3.Id = 18;
+            tag3.TagId = "E2801191A502000000155010";
+            tag3.EstabelecimentoId = 16;
+            tag3.tipoTag = (int)EnumTipoTag.localizacao;
+            tag3.Nome = "tag03";
+            tag3.TagsPai = new List<TagsPaiTO>();
+
+            TagTO tag4 = new TagTO();
+            tag4.Id = 20;
+            tag4.TagId = "E2801191A502000000155011";
+            tag4.EstabelecimentoId = 16;
+            tag4.tipoTag = (int)EnumTipoTag.localizacao;
+            tag4.Nome = "tag04";
+            tag4.TagsPai = new List<TagsPaiTO>();
+
+            TagTO tag5 = new TagTO();
+            tag5.Id = 21;
+            tag5.TagId = "E2801191A502000000155012";
+            tag5.EstabelecimentoId = 16;
+            tag5.tipoTag = (int)EnumTipoTag.localizacao;
+            tag5.Nome = "tag05";
+            tag5.TagsPai = new List<TagsPaiTO>();
+
+            TagTO tag6 = new TagTO();
+            tag6.Id = 22;
+            tag6.TagId = "E2801191A502000000155013";
+            tag6.EstabelecimentoId = 16;
+            tag6.tipoTag = (int)EnumTipoTag.localizacao;
+            tag6.Nome = "tagBanheiro";
+            tag6.TagsPai = new List<TagsPaiTO>();
+            //ida tag_pai é o menor id e o outro o maior
+            tag1.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag1.Id, Id_Tag = tag2.Id, Direcao = (int)EnumDirecao.Esquerda });
+            tag2.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag1.Id, Id_Tag = tag2.Id, Direcao = (int)EnumDirecao.Esquerda });
+
+            tag2.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag2.Id, Id_Tag = tag3.Id, Direcao = (int)EnumDirecao.Tras });
+            tag3.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag2.Id, Id_Tag = tag3.Id, Direcao = (int)EnumDirecao.Tras });
+
+            tag3.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag3.Id, Id_Tag = tag4.Id, Direcao = (int)EnumDirecao.Tras });
+            tag4.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag3.Id, Id_Tag = tag4.Id, Direcao = (int)EnumDirecao.Tras });
+
+            tag4.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag4.Id, Id_Tag = tag5.Id, Direcao = (int)EnumDirecao.Esquerda });
+            tag5.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag4.Id, Id_Tag = tag5.Id, Direcao = (int)EnumDirecao.Esquerda });
+
+            tag5.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag5.Id, Id_Tag = tag6.Id, Direcao = (int)EnumDirecao.Esquerda });
+            tag6.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag5.Id, Id_Tag = tag6.Id, Direcao = (int)EnumDirecao.Esquerda });
+
+            Tags.Add(tag1);
+            Tags.Add(tag2);
+            Tags.Add(tag3);
+            Tags.Add(tag4);
+            Tags.Add(tag5);
+            Tags.Add(tag6);
+     
+
+
+            List<LugaresTO> Lugares = new List<LugaresTO>();
+
+            LugaresTO lugar1=new LugaresTO();
+
+            lugar1.TAG_id = tag6.Id;
+            lugar1.Nome = "Banheiro";
+            lugar1.Descricao = "";
+            lugar1.Navegavel = true;
+
+            Lugares.Add(lugar1);
+
+            List<ItensTO> Itens = new List<ItensTO>();
+
+            retorno.Tags = Tags;
+            retorno.Lugares = Lugares;
+            retorno.Itens = Itens;
+
+
+
+            return retorno;
+        }
 
         public static EstabelecimentoTagsTO GetEstabelecimentoTags(string tagId)
         {
             EstabelecimentoTagsTO data=null;
             try
             {
-                var retornoAPI = ExecGetAPI(MontaLinkAPI(GetTagsEstabelecimento, "TagID",tagId), null, 3, anonymous: false);
-                if (retornoAPI.Sucesso)
+                if (!_MocarDados)
                 {
-                    data = JsonConvert.DeserializeObject<EstabelecimentoTagsTO>(retornoAPI.RetornoObj.ToString());
+                    var retornoAPI = ExecGetAPI(MontaLinkAPI(GetTagsEstabelecimento, "TagID", tagId), null, 3, timeOutEmSegundos: 5, anonymous: false);
+                    if (retornoAPI.Sucesso)
+                    {
+                        data = JsonConvert.DeserializeObject<EstabelecimentoTagsTO>(retornoAPI.RetornoObj.ToString());
+                    }
                 }
+                else
+                    data = GetMockDados();
+
+
 
             }
             catch (Exception err)

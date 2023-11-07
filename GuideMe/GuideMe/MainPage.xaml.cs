@@ -46,6 +46,7 @@ namespace GuideMe
             _bluetoothService = DependencyService.Get<IAndroidBluetoothService>();
             STTHelper.InitService();
             STTHelper.OnComandoVozDetectado += ComandoVozDetectado;
+            STTHelper.OnComandoVozDetectadoDebugger += ComandoVozDetectadoDebugger;
             /*_versaoDoAndroid = _bluetoothService.ObterVersaoDoAndroid();
             lugaresMock.Add("Lojas Americanas");
             lugaresMock.Add("Banheiro");
@@ -126,6 +127,10 @@ namespace GuideMe
                 _ = Task.Factory.StartNew(_ => ControlePaginaPrincipal(), TaskCreationOptions.LongRunning);
             }
         }
+        async void ComandoVozDetectadoDebugger(object sender, ComandoVozEventArgs args)
+        {
+            _ = this.DisplayToastAsync($"Processar audio {args.Auxiliar}", 800);
+        }
 
         async void ComandoVozDetectado(object sender, ComandoVozEventArgs args)
         {
@@ -138,11 +143,11 @@ namespace GuideMe
                
             else if (args.Comando != EnumComandoVoz.ListarLugares)
             {
-                _ = TTSHelper.Speak($"Comando de voz detectado: {args.Comando.ToString()}");
+               // _ = TTSHelper.Speak($"Comando de voz detectado: {args.Comando.ToString()}");
             }
             else
             {
-                await TTSHelper.Speak($"Comando de voz detectado: {args.Comando.ToString()}");
+                await TTSHelper.Speak($"Os lugares disponíveis são:");
                 foreach (var lugar in navegacao.All_Lugares_Navegaveis)
                     await TTSHelper.Speak(lugar.Nome);
             }
@@ -169,9 +174,13 @@ namespace GuideMe
         protected override void OnAppearing()
         {
             base.OnAppearing();
-            _ = TTSHelper.Speak("Bem vindo ao Guide-me !");
-            if (_device==null)
+
+            if (_device == null)
+            {
+                _ = TTSHelper.Speak("Bem vindo ao Guide-me !");
                 VerificaCondicoesBluetooth();
+            }
+                
         }
 
         private async void VerificaCondicoesBluetooth()
@@ -237,34 +246,39 @@ namespace GuideMe
 
         private async void ObterPermissaoLocalizacaoParaBluetoothLE()
         {
-            PermissaoBLE = await _bluetoothService.ObtemPermissaoLocalizacao();
-
-            // Talkback depois
-            if (PermissaoBLE == PermissionStatus.Denied || PermissaoBLE == PermissionStatus.Disabled)
-                await DisplayAlert("Uso de Bluetooth não autorizado", "Não é possível usar o app sem o Bluetooth.", "Ok");
-
-            else
+            MainThread.BeginInvokeOnMainThread(async () =>
             {
-                bool oBluetoothTaAtivado = _bluetoothService.VerificaSeOBluetoothEstaAtivado();
+                PermissaoBLE = await _bluetoothService.ObtemPermissaoLocalizacao();
+                await ObterPermissaoBluetoothLEAndroid12Async();
 
-                if (!oBluetoothTaAtivado)
-                {
-                    bool decisao = await DisplayAlert("O Bluetooth do dispositivo está desativado", "Para o GuideMe funcionar, é necessário que o Bluetooth esteja ativado." +
-                        "\nDeseja ativar o Bluetooth?", "Yes", "No");
+                // Talkback depois
+                if (PermissaoBLE == PermissionStatus.Denied || PermissaoBLE == PermissionStatus.Disabled)
+                    await DisplayAlert("Uso de Bluetooth não autorizado", "Não é possível usar o app sem o Bluetooth.", "Ok");
 
-                    if (decisao)
-                        _bluetoothService.AbreTelaConfiguracoes();
-                }
-
-                else if (!string.IsNullOrEmpty(StorageDAO.NomeBengalaBluetooth) && !_threadMensagensBengala)
-                    ConectarNaBengala();
                 else
                 {
-                    _ = TTSHelper.Speak("Nenhum dispositivo foi encontrado!");
-                    ProcurarDispositivo();
+                    bool oBluetoothTaAtivado = _bluetoothService.VerificaSeOBluetoothEstaAtivado();
+
+                    if (!oBluetoothTaAtivado)
+                    {
+                        bool decisao = await DisplayAlert("O Bluetooth do dispositivo está desativado", "Para o GuideMe funcionar, é necessário que o Bluetooth esteja ativado." +
+                            "\nDeseja ativar o Bluetooth?", "Yes", "No");
+
+                        if (decisao)
+                            _bluetoothService.AbreTelaConfiguracoes();
+                    }
+
+                    else if (!string.IsNullOrEmpty(StorageDAO.NomeBengalaBluetooth) && !_threadMensagensBengala)
+                        ConectarNaBengala();
+                    else
+                    {
+                        _ = TTSHelper.Speak("Nenhum dispositivo foi encontrado!");
+                        ProcurarDispositivo();
+                    }
+
                 }
-                    
-            }
+            });
+            
         }
 
         private void InicializaControleBengala()
@@ -522,7 +536,8 @@ namespace GuideMe
                                     frame = (frameLido as FrameLeituraTag);
                                     frame.IDMensagem = tokensFinais[1];
                                     _ = this.DisplayToastAsync($"Tag lida: {frame.TagID} ", 800);
-
+                                    if (Debugger.IsAttached)
+                                        Console.WriteLine($"TAG: {frame.IDMensagem} millis {instanteMillis}");
                                     navegacao.SetLocal(frame.TagID);
 
                                 }
@@ -568,6 +583,7 @@ namespace GuideMe
 
         private async void MainPage_OnBluetoothScanTerminado()
         {
+            _ = this.DisplayToastAsync("ScanBluetoothFinalizado", 2000);
             List<IDevice> dispositivos = new List<IDevice>();
             if (_bluetoothService is IAndroidBluetoothService)
                 dispositivos = new List<IDevice>((_bluetoothService as IAndroidBluetoothService)._dispositivosEscaneados);

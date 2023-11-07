@@ -6,6 +6,7 @@ namespace GuideMe.TOs
 {
     public class EstabelecimentoTagsTO
     {
+        public string NomeEstabelecimento { get; set; }
         public List<TagTO> Tags { get; set; }
         public List<LugaresTO> Lugares { get; set; }
         public List<ItensTO> Itens { get; set; }

@@ -4,6 +4,7 @@ using Microsoft.CognitiveServices.Speech;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ namespace GuideMe.STT
 {
     public static class STTHelper
     {
+        public static ContentPage Page { get; set; }
         public class ComandoVozEventArgs : EventArgs
         {
             public double Threshold { get; set; }
@@ -21,6 +23,8 @@ namespace GuideMe.STT
 
             public string Auxiliar { get; set; }
             public string Lugar { get; set; }
+
+            
 
             public ComandoVozEventArgs(double threshold, EnumComandoVoz comando,string auxiliar,string lugar)
             {
@@ -42,6 +46,7 @@ namespace GuideMe.STT
 
         public static EventHandler<SpeechRecognitionEventArgs> OnRecognizedSomething;
         public static EventHandler<ComandoVozEventArgs> OnComandoVozDetectado;
+        public static EventHandler<ComandoVozEventArgs> OnComandoVozDetectadoDebugger;
         public static double Threshold { get; set; } = 0.7;
 
         public static Dictionary<EnumComandoVoz, List<string>> ComandosVoz = null;
@@ -103,10 +108,15 @@ namespace GuideMe.STT
             else
             {
                 erros += maior.Length - menor.Length;
+
+                if (Debugger.IsAttached)
+                    Console.WriteLine($"************************************* GetSimiliaridade {primeira} {segunda} {(double)(maior.Length - erros) / (double)erros}");
+
                 return (double)(maior.Length-erros) / (double)erros;
             }
 
-
+            if (Debugger.IsAttached)
+                Console.WriteLine($"************************************* GetSimiliaridade {primeira} {segunda} {porcentagem}");
 
 
             return porcentagem;
@@ -179,7 +189,7 @@ namespace GuideMe.STT
                 foreach (string lugar in lugares)
                 {
                     retorno.Add(s + $" {lugar}");
-                    ComandoVoz_Lugar.Add(s + $" {lugar}", lugar);
+                    ComandoVoz_Lugar.Add(s + $" {lugar.ToLower()}", lugar);
                 }
                     
 
@@ -206,27 +216,78 @@ namespace GuideMe.STT
                 ComandosVoz.Add(EnumComandoVoz.Irpara, GetPatternsIrPara(lugares));
 
         }
+        static string NormalizarString(string text)
+        {
+            return RemoveAcentos(text).ToLower();
+        }
+        static string RemoveAcentos(string text)
+        {
+            var normalizedString = text.Normalize(NormalizationForm.FormD);
+            var stringBuilder = new StringBuilder(capacity: normalizedString.Length);
+
+            for (int i = 0; i < normalizedString.Length; i++)
+            {
+                char c = normalizedString[i];
+                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+                {
+                    stringBuilder.Append(c);
+                }
+            }
+
+            return stringBuilder
+                .ToString()
+                .Normalize(NormalizationForm.FormC);
+        }
+
         private static void ProcessarAudio(string fala)
         {
+            if (Debugger.IsAttached)
+            {
+                OnComandoVozDetectadoDebugger?.Invoke(new object(),
+                                       new ComandoVozEventArgs(0.0, EnumComandoVoz.TestarDispositivo,
+                                       fala, fala));
+            }
+            if (Debugger.IsAttached)
+                Console.WriteLine($"************************************* ProcessarAudio {fala}");
+
             foreach (KeyValuePair<EnumComandoVoz, List<string>> value in ComandosVoz)
             {
+                
                 double limite = 0.7;
                 if (value.Key == EnumComandoVoz.Irpara)
-                    limite = 0.9;
+                    limite = 0.7;
                 
                 foreach (string s in value.Value)
                 {
+                    if (Debugger.IsAttached)
+                        Console.WriteLine($"************************************* ProcessarAudio procurando {s}");
                     double threshold = GetSimiliaridade(fala.ToLower(), s.ToLower());
                     if (threshold >= limite)
                     {
+                        if (Debugger.IsAttached)
+                            Console.WriteLine($"************************************* ProcessarAudio limite alcançado! {threshold}");
+
                         string lugar = "";
                         if (value.Key == EnumComandoVoz.Irpara)
                         {
+
+                            if (Debugger.IsAttached)
+                                Console.WriteLine($"************************************* ProcessarAudio é um comando de local!");
+
                             if (ComandoVoz_Lugar.ContainsKey(s))
                             {
+                                if (Debugger.IsAttached)
+                                    Console.WriteLine($"************************************* ProcessarAudio chave encontrada!");
+
                                 lugar = ComandoVoz_Lugar[s];
-                                if (fala.ToLower().Contains(lugar.ToLower()))
+                                string falaNormalizada = NormalizarString(fala);
+                                string lugarNormalizado = NormalizarString(lugar);
+                                if (falaNormalizada.Contains(lugarNormalizado))
                                 {
+                                    if (Debugger.IsAttached)
+                                        Console.WriteLine($"************************************* ProcessarAudio fala contém o lugar realmente!");
+
                                     OnComandoVozDetectado?.Invoke(new object(),
                                        new ComandoVozEventArgs(threshold, value.Key, s, lugar));
                                     StopListening();

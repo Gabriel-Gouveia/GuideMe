@@ -27,21 +27,90 @@ namespace GuideMe.Navegacao
         public List<int> CalcularRota(int startNode, int nodoDesejado)
         {
             List<int> rota = new List<int>();
+            List<int> rotaAux = new List<int>();
             HashSet<int> visited = new HashSet<int>();
             bool nodoEncontrado = false;
-            DFSRecursive(startNode, visited, nodoDesejado, rota, ref nodoEncontrado);
+            rota=BFS(startNode, nodoDesejado);
+            foreach (var i in rota)
+            {
+                rotaAux.Add(i);
+                if (i == nodoDesejado)
+                    break;
+            }
 
-            if (rota.Count<=0 || rota.Count == 1 && startNode != nodoDesejado)
+            //DFSRecursive(startNode, visited, nodoDesejado, rota, ref nodoEncontrado);
+            //DFSHelper(startNode, nodoDesejado, visited, rota);
+            
+            if (rotaAux.Count<=0 || rotaAux.Count == 1 && startNode != nodoDesejado)
                 return null;
             else
-                return rota;
+                return rotaAux;
+        }
+        public List<int> BFS(int startNode, int desiredNode)
+        {
+            var visited = new HashSet<int>();
+            var route = new List<int>();
+
+            if (BFSHelper(startNode, desiredNode, visited, route))
+                return route;
+            else
+                return new List<int>(); // No route found
         }
 
-        private void DFSRecursive(int node, HashSet<int> visited, int nodoDesejado, List<int> rota, ref bool nodoEncontrado)
+        private bool BFSHelper(int startNode, int desiredNode, HashSet<int> visited, List<int> route)
         {
-            visited.Add(node);
-            Console.Write(node + " ");
+            Queue<int> queue = new Queue<int>();
+            Dictionary<int, int> parentMap = new Dictionary<int, int>();
 
+            visited.Add(startNode);
+            queue.Enqueue(startNode);
+
+            while (queue.Count > 0)
+            {
+                int currentNode = queue.Dequeue();
+                route.Add(currentNode);
+
+                if (currentNode == desiredNode)
+                {
+                    // Reconstruct the route from startNode to desiredNode
+                    int node = desiredNode;
+                    while (node != startNode)
+                    {
+                        route.Insert(0, node);
+                        node = parentMap[node];
+                    }
+                    route.Insert(0, startNode);
+                    return true;
+                }
+
+                if (nodos.ContainsKey(currentNode))
+                {
+                    foreach (var neighbor in nodos[currentNode])
+                    {
+                        if (!visited.Contains(neighbor))
+                        {
+                            visited.Add(neighbor);
+                            parentMap[neighbor] = currentNode;
+                            queue.Enqueue(neighbor);
+                        }
+                    }
+                }
+            }
+
+            return false; // No route found
+        }
+    
+
+    private void DFSRecursive(int node, HashSet<int> visited, int nodoDesejado, List<int> rota, ref bool nodoEncontrado, Stack<int> stack = null)
+        {
+            /*visitNode(node,visited,stack, nodoDesejado);
+
+            while (stack.Count >= 0)
+            {
+                var aux = stack.Pop();
+                visitNode(aux, visited, stack, nodoDesejado);
+            }*/
+            visited.Add(node);
             if (nodos.ContainsKey(node) && !nodoEncontrado)
             {
                 foreach (var neighbor in nodos[node])
@@ -50,14 +119,18 @@ namespace GuideMe.Navegacao
                     {
                         if (!visited.Contains(neighbor) && node != nodoDesejado)
                         {
-                            rota.Add(node);
+                            rota.Add(neighbor);
                             DFSRecursive(neighbor, visited, nodoDesejado, rota, ref nodoEncontrado);
                         }
                         else if (node == nodoDesejado)
                         {
                             nodoEncontrado = true;
-                            rota.Add(node);
+                            if(!rota.Contains(node))
+                                rota.Add(node);
                         }
+
+                        if(!nodoEncontrado && visited.Contains(neighbor) && rota.Contains(neighbor))
+                            rota.Remove(neighbor);
                     }
                     else
                         break;
@@ -66,14 +139,18 @@ namespace GuideMe.Navegacao
                 }
             }
         }
+
         public void AddEdge(int v, int w)
         {
             if (!nodos.ContainsKey(v))
                 nodos[v] = new List<int>();
             nodos[v].Add(w);
         }
-    }
-}
 
+
+    }
+
+
+}
    
 
