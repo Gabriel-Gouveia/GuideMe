@@ -56,11 +56,11 @@ namespace GuideMe
             lugaresMock.Add("mequi");
             lugaresMock.Add("burguer king");
             STTHelper.RegistrarLugares(lugaresMock);*/
-            _ = Task.Factory.StartNew(_ => ControlePaginaPrincipal(), TaskCreationOptions.LongRunning);
+            _ = Task.Factory.StartNew(_ => ControleTutorialPaginaPrincipal(), TaskCreationOptions.LongRunning);
             _ = Task.Factory.StartNew(_ => ControleGestos(), TaskCreationOptions.LongRunning);        
         }
 
-        private async void ControlePaginaPrincipal()
+        private async void ControleTutorialPaginaPrincipal()
         {
             string[,] dicas = new string[,] 
             { { "gifDireita.gif","Deslize 2 vezes para a direita para testar o dispositivo!"},
@@ -124,7 +124,7 @@ namespace GuideMe
             }
             catch (Exception err)
             {
-                _ = Task.Factory.StartNew(_ => ControlePaginaPrincipal(), TaskCreationOptions.LongRunning);
+                _ = Task.Factory.StartNew(_ => ControleTutorialPaginaPrincipal(), TaskCreationOptions.LongRunning);
             }
         }
         async void ComandoVozDetectadoDebugger(object sender, ComandoVozEventArgs args)

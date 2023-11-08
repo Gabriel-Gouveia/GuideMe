@@ -2,14 +2,15 @@
 <ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              Style="{StaticResource MainColorBackground}"
-             x:Class="GuideMe.MainPage">
+             x:Class="GuideMe.MainPage"
+             NavigationPage.HasNavigationBar="False">
 
     <StackLayout HorizontalOptions="CenterAndExpand" VerticalOptions="StartAndExpand">
         <Frame BackgroundColor="Black">
             <StackLayout Orientation="Horizontal"
                          Margin="100,0,0,0">
                 <Image Source="logotipo.png"></Image>
-                <Label Text="Guide Me" FontSize="20"></Label>
+                <Label Text="Guide Me" FontSize="25"></Label>
             </StackLayout>
         </Frame>
 
