@@ -63,6 +63,7 @@ namespace GuideMe.Navegacao
                                 All_Itens_Navegaveis.Add(item);
 
                         STTHelper.RegistrarLugares(lugaresString);
+                        STTHelper.RegistrarOndeEstou();
 
                         if (!string.IsNullOrEmpty(data.NomeEstabelecimento)) 
                         _ = TTSHelper.Speak($"Bem vindo à {data.NomeEstabelecimento}");
@@ -81,7 +82,24 @@ namespace GuideMe.Navegacao
             _ = TTSHelper.Speak("Não consegui encontrar informações sobre o seu local!");
             return false;
         }
+        public string VerificaUltimoLugar()
+        {
+            if (UltimaTagLida != null)
+            {
+                var lugar = All_Lugares.Find(x=>x.TAG_id==UltimaTagLida.Id);
+                if (lugar != null)
+                    return $"Você está em {lugar.Nome}";
+            }
 
+            if (DadosEstabelecimento != null)
+            {
+                if(!string.IsNullOrEmpty(DadosEstabelecimento.NomeEstabelecimento))
+                    return $"Você está em {DadosEstabelecimento.NomeEstabelecimento}";
+            }
+
+            return $"Não sei onde estamos";
+
+        }
         private void DescreverTag()
         {
             if (UltimaTagLida != null && (UltimaTagLida != UltimaTagQueFoiDescrita ||
@@ -133,9 +151,9 @@ namespace GuideMe.Navegacao
                 case EnumDirecao.Esquerda:
                     return EnumDirecao.Direita;
                 case EnumDirecao.Frente:
-                    return EnumDirecao.Tras;
-                case EnumDirecao.Tras:
                     return EnumDirecao.Frente;
+                case EnumDirecao.Tras:
+                    return EnumDirecao.Tras;
 
             }
 
@@ -220,7 +238,7 @@ namespace GuideMe.Navegacao
                         List<TagTO> rota = ConverterRota(grafo.CalcularRota(UltimaTagLida.Id, tag.Id));
                         if (rota != null)
                         {
-                            await TTSHelper.Speak("Rota calculada com sucesso!");                          
+                            await TTSHelper.Speak($"Ok! vamos para {lugarDesejado}");                          
                             RotaAtual = rota;
                             _lugarDesejado = lugarDesejado;
                             PosAtualRota = 0;

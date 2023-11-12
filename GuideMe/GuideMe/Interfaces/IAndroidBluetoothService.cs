@@ -9,10 +9,13 @@ using Xamarin.Essentials;
 namespace GuideMe.Interfaces
 {
     public delegate void OnBluetoothScanTerminado();
+    public delegate void OnBluetoothDesconectado();
     public interface IAndroidBluetoothService
     {
         
         List<IDevice> _dispositivosEscaneados { get; set; }
+
+        event OnBluetoothDesconectado OnDesconectado;
 
         event OnBluetoothScanTerminado OnBluetoothScanTerminado;
         bool VerificaSeOBluetoothEstaAtivado();

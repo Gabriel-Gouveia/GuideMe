@@ -9,6 +9,8 @@ namespace GuideMe.Enum
         None,
         VibrarMotor,
         ProcurarDispositivos,
-        ComandoVoz
+        ComandoVoz,
+        OndeEstou,
+        QuaisLugaresDisponiveis
     }
 }

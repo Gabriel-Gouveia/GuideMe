@@ -47,7 +47,7 @@ namespace GuideMe.Utils
         {
             EstabelecimentoTagsTO retorno = new EstabelecimentoTagsTO();
 
-            retorno.NomeEstabelecimento = "Fundação Dorina Novil";
+            retorno.NomeEstabelecimento = "Centro de Apoio ao Deficiente Visual";
 
             List<TagTO> Tags = new List<TagTO>();
 
@@ -55,8 +55,8 @@ namespace GuideMe.Utils
             tag1.Id = 16;
             tag1.TagId = "E2801191A502000000155008";
             tag1.EstabelecimentoId = 16;
-            tag1.tipoTag = (int)EnumTipoTag.localizacao;
-            tag1.Nome = "tag01";
+            tag1.tipoTag = (int)EnumTipoTag.lugar;
+            tag1.Nome = "tagRecepção";
             tag1.TagsPai = new List<TagsPaiTO>();
 
             TagTO tag2 = new TagTO();
@@ -77,7 +77,7 @@ namespace GuideMe.Utils
 
             TagTO tag4 = new TagTO();
             tag4.Id = 20;
-            tag4.TagId = "E2801191A502000000155011";
+            tag4.TagId = "E2801191A502000000155014";
             tag4.EstabelecimentoId = 16;
             tag4.tipoTag = (int)EnumTipoTag.localizacao;
             tag4.Nome = "tag04";
@@ -98,15 +98,41 @@ namespace GuideMe.Utils
             tag6.tipoTag = (int)EnumTipoTag.localizacao;
             tag6.Nome = "tagBanheiro";
             tag6.TagsPai = new List<TagsPaiTO>();
+
+            TagTO tag7 = new TagTO();
+            tag7.Id = 23;
+            tag7.TagId = "E2801191A502000000155015";
+            tag7.EstabelecimentoId = 16;
+            tag7.tipoTag = (int)EnumTipoTag.localizacao;
+            tag7.Nome = "tagBanheiro";
+            tag7.TagsPai = new List<TagsPaiTO>();
+
+            TagTO tagSala1 = new TagTO();
+            tagSala1.Id = 24;
+            tagSala1.TagId = "E2801191A502000000155018";
+            tagSala1.EstabelecimentoId = 16;
+            tagSala1.tipoTag = (int)EnumTipoTag.lugar;
+            tagSala1.Nome = "tagBanheiro";
+            tagSala1.TagsPai = new List<TagsPaiTO>();
+
+            TagTO tag8 = new TagTO();
+            tag8.Id = 25;
+            tag8.TagId = "E2801191A502000000155097";
+            tag8.EstabelecimentoId = 16;
+            tag8.tipoTag = (int)EnumTipoTag.localizacao;
+            tag8.Nome = "tagBanheiro";
+            tag8.TagsPai = new List<TagsPaiTO>();
             //ida tag_pai é o menor id e o outro o maior
             tag1.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag1.Id, Id_Tag = tag2.Id, Direcao = (int)EnumDirecao.Esquerda });
             tag2.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag1.Id, Id_Tag = tag2.Id, Direcao = (int)EnumDirecao.Esquerda });
+            tag1.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag1.Id, Id_Tag = tag7.Id, Direcao = (int)EnumDirecao.Direita });
+            tag7.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag1.Id, Id_Tag = tag7.Id, Direcao = (int)EnumDirecao.Direita });
 
-            tag2.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag2.Id, Id_Tag = tag3.Id, Direcao = (int)EnumDirecao.Tras });
-            tag3.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag2.Id, Id_Tag = tag3.Id, Direcao = (int)EnumDirecao.Tras });
+            tag2.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag2.Id, Id_Tag = tag3.Id, Direcao = (int)EnumDirecao.Frente });
+            tag3.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag2.Id, Id_Tag = tag3.Id, Direcao = (int)EnumDirecao.Frente });
 
-            tag3.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag3.Id, Id_Tag = tag4.Id, Direcao = (int)EnumDirecao.Tras });
-            tag4.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag3.Id, Id_Tag = tag4.Id, Direcao = (int)EnumDirecao.Tras });
+            tag3.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag3.Id, Id_Tag = tag4.Id, Direcao = (int)EnumDirecao.Frente });
+            tag4.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag3.Id, Id_Tag = tag4.Id, Direcao = (int)EnumDirecao.Frente });
 
             tag4.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag4.Id, Id_Tag = tag5.Id, Direcao = (int)EnumDirecao.Esquerda });
             tag5.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag4.Id, Id_Tag = tag5.Id, Direcao = (int)EnumDirecao.Esquerda });
@@ -114,13 +140,27 @@ namespace GuideMe.Utils
             tag5.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag5.Id, Id_Tag = tag6.Id, Direcao = (int)EnumDirecao.Esquerda });
             tag6.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag5.Id, Id_Tag = tag6.Id, Direcao = (int)EnumDirecao.Esquerda });
 
+            tag7.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag7.Id, Id_Tag = tagSala1.Id, Direcao = (int)EnumDirecao.Frente });
+            tagSala1.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag7.Id, Id_Tag = tagSala1.Id, Direcao = (int)EnumDirecao.Frente });
+
+            tagSala1.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tagSala1.Id, Id_Tag = tag8.Id, Direcao = (int)EnumDirecao.Frente });
+            tag8.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tagSala1.Id, Id_Tag = tag8.Id, Direcao = (int)EnumDirecao.Frente });
+
+            tag8.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag5.Id, Id_Tag = tag8.Id, Direcao = (int)EnumDirecao.Esquerda });
+            tag5.TagsPai.Add(new TagsPaiTO() { Id_Tag_Pai = tag5.Id, Id_Tag = tag8.Id, Direcao = (int)EnumDirecao.Esquerda });
+
             Tags.Add(tag1);
             Tags.Add(tag2);
             Tags.Add(tag3);
             Tags.Add(tag4);
             Tags.Add(tag5);
             Tags.Add(tag6);
-     
+            Tags.Add(tag7);
+            Tags.Add(tagSala1);
+            Tags.Add(tag8);
+
+
+
 
 
             List<LugaresTO> Lugares = new List<LugaresTO>();
@@ -132,7 +172,24 @@ namespace GuideMe.Utils
             lugar1.Descricao = "";
             lugar1.Navegavel = true;
 
+            LugaresTO lugar2 = new LugaresTO();
+
+            lugar2.TAG_id = tag1.Id;
+            lugar2.Nome = "Recepção";
+            lugar2.Descricao = "";
+            lugar2.Navegavel = true;
+
+            LugaresTO Sala1 = new LugaresTO();
+
+            Sala1.TAG_id = tagSala1.Id;
+            Sala1.Nome = "Sala um";
+            Sala1.Descricao = "";
+            Sala1.Navegavel = true;
+
+
+            Lugares.Add(lugar2);
             Lugares.Add(lugar1);
+            Lugares.Add(Sala1);
 
             List<ItensTO> Itens = new List<ItensTO>();
 

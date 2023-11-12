@@ -39,6 +39,8 @@ namespace GuideMe
         private bool _threadMensagensBengala = false;
         NavegacaoController navegacao = new NavegacaoController();
 
+        private Dictionary<string, DateTime> LastReadTags = new Dictionary<string, DateTime>();
+
         public MainPage()
         {
             InitializeComponent();          
@@ -57,7 +59,8 @@ namespace GuideMe
             lugaresMock.Add("burguer king");
             STTHelper.RegistrarLugares(lugaresMock);*/
             _ = Task.Factory.StartNew(_ => ControleTutorialPaginaPrincipal(), TaskCreationOptions.LongRunning);
-            _ = Task.Factory.StartNew(_ => ControleGestos(), TaskCreationOptions.LongRunning);        
+            _ = Task.Factory.StartNew(_ => ControleGestos(), TaskCreationOptions.LongRunning);
+            _ = TTSHelper.Speak("Bem vindo ao Guide-me !");
         }
 
         private async void ControleTutorialPaginaPrincipal()
@@ -127,6 +130,7 @@ namespace GuideMe
                 _ = Task.Factory.StartNew(_ => ControleTutorialPaginaPrincipal(), TaskCreationOptions.LongRunning);
             }
         }
+
         async void ComandoVozDetectadoDebugger(object sender, ComandoVozEventArgs args)
         {
             _ = this.DisplayToastAsync($"Processar audio {args.Auxiliar}", 800);
@@ -137,20 +141,37 @@ namespace GuideMe
             if (args.Comando == EnumComandoVoz.Irpara)
             {
                 //_ = TTSHelper.Speak($"Comando de voz detectado: {args.Comando.ToString()} {args.Lugar}");
-                await TTSHelper.Speak($"Ok!. Calculando rota para: {args.Lugar}");
+                await TTSHelper.Speak($"Ok!");
                 navegacao.CalcularRota(args.Lugar);
             }
-               
-            else if (args.Comando != EnumComandoVoz.ListarLugares)
+
+            else if (args.Comando == EnumComandoVoz.TestarDispositivo)
             {
-               // _ = TTSHelper.Speak($"Comando de voz detectado: {args.Comando.ToString()}");
+                await TTSHelper.Speak($"Ok!");
+                if (_device != null)
+                    FilaRequsicoesBengala.Add(new RequisicaoMotor() { Tipo = Enum.EnumTipoRequisicaoBengala.AcionarMotor, QtVibracoes = 2 });
+                // _ = TTSHelper.Speak($"Comando de voz detectado: {args.Comando.ToString()}");
             }
-            else
+            else if (args.Comando == EnumComandoVoz.ListarLugares)
+            {
+                await LugaresDisponiveis();
+
+            }
+            else if (args.Comando == EnumComandoVoz.OndeEstou)
+            {
+                await TTSHelper.Speak(navegacao.VerificaUltimoLugar());
+            }
+        }
+        private async Task LugaresDisponiveis()
+        {
+            if (navegacao != null && navegacao.All_Lugares_Navegaveis != null && navegacao.All_Lugares_Navegaveis.Count > 0)
             {
                 await TTSHelper.Speak($"Os lugares disponíveis são:");
                 foreach (var lugar in navegacao.All_Lugares_Navegaveis)
                     await TTSHelper.Speak(lugar.Nome);
             }
+            else
+                await TTSHelper.Speak("Nenhum lugar disponível");
         }
 
         void UpdateTranscription(string newText)
@@ -175,12 +196,38 @@ namespace GuideMe
         {
             base.OnAppearing();
 
-            if (_device == null)
+            _ = Task.Factory.StartNew(_ => ProcuraDispositivo(), TaskCreationOptions.LongRunning);
+
+        }
+
+        private async Task ProcuraDispositivo()
+        {
+            try
             {
-                _ = TTSHelper.Speak("Bem vindo ao Guide-me !");
-                VerificaCondicoesBluetooth();
+                while (_device == null)
+                {
+
+                    if (_bluetoothService.BluetoothLEEhSuportado() && PermissaoBLE != PermissionStatus.Granted && MicEnabled)
+                    {
+                        if (Convert.ToInt32(_versaoDoAndroid) >= 12)
+                        {
+                            bool permissaoBLEAndroid12Concedida = await ObterPermissaoBluetoothLEAndroid12Async();
+
+                            if (!permissaoBLEAndroid12Concedida)
+                                return;
+                        }
+
+                        ObterPermissaoLocalizacaoParaBluetoothLE();
+                    }
+
+                    Thread.Sleep(1000);
+                }
             }
+            catch
+            {
                 
+            }
+            
         }
 
         private async void VerificaCondicoesBluetooth()
@@ -272,7 +319,7 @@ namespace GuideMe
                         ConectarNaBengala();
                     else
                     {
-                        _ = TTSHelper.Speak("Nenhum dispositivo foi encontrado!");
+                        //_ = TTSHelper.Speak("Nenhum dispositivo foi encontrado!");
                         ProcurarDispositivo();
                     }
 
@@ -302,6 +349,8 @@ namespace GuideMe
                     bool apagouMsg = await _bluetoothService.ApagaUltimaTagLida(_device);
                     await _bluetoothService.AcionarVibracaoBengala(_device, 2);
                     _ = TTSHelper.Speak("Dispositivo conectado com sucesso!");
+                    _bluetoothService.OnDesconectado -= _bluetoothService_OnDesconectado;
+                    _bluetoothService.OnDesconectado += _bluetoothService_OnDesconectado;
                     InicializaControleBengala();
 
                 }
@@ -314,6 +363,11 @@ namespace GuideMe
             {
                 await DisplayAlert("Exceção", "Deu a exceção do Java Security pedindo o bluetooth connection.", "Ok");
             }
+        }
+
+        private void _bluetoothService_OnDesconectado()
+        {
+            _ = TTSHelper.Speak("O dispositivo foi desconectado!");
         }
 
         public static string ConvertHex(string hexString)
@@ -367,13 +421,17 @@ namespace GuideMe
                     return EnumTipoAcaoGesto.ProcurarDispositivos;
                 case "swcswcswc":
                     return EnumTipoAcaoGesto.ComandoVoz;
+                case "sweswe":
+                    return EnumTipoAcaoGesto.OndeEstou;
+                case "sweswcswe":
+                    return EnumTipoAcaoGesto.QuaisLugaresDisponiveis;
                 default:
                     return EnumTipoAcaoGesto.None;
 
             }
         }
 
-        private void ProcessaGesto(EnumTipoAcaoGesto comando)
+        private async Task ProcessaGesto(EnumTipoAcaoGesto comando)
         {
             Console.WriteLine($"Processando comando: {comando}");
             switch (comando)
@@ -391,8 +449,16 @@ namespace GuideMe
                 case EnumTipoAcaoGesto.ComandoVoz:
                     STTHelper.StartListening();
                     break;
+                case EnumTipoAcaoGesto.OndeEstou:
+                    await TTSHelper.Speak(navegacao.VerificaUltimoLugar());
+                    break;
+                case EnumTipoAcaoGesto.QuaisLugaresDisponiveis:
+                    await LugaresDisponiveis();
+                    break;
                 default:
                     return ;
+
+                   
 
             }
         }
@@ -425,7 +491,7 @@ namespace GuideMe
 
                     if (tipoAcaoGesto != EnumTipoAcaoGesto.None)
                     {
-                        ProcessaGesto(tipoAcaoGesto);
+                        await ProcessaGesto(tipoAcaoGesto);
                         LimpaListaGestos(ref gestosProcessados,true);
                     }
                         
@@ -538,7 +604,19 @@ namespace GuideMe
                                     _ = this.DisplayToastAsync($"Tag lida: {frame.TagID} ", 800);
                                     if (Debugger.IsAttached)
                                         Console.WriteLine($"TAG: {frame.IDMensagem} millis {instanteMillis}");
-                                    navegacao.SetLocal(frame.TagID);
+
+                                    if (!LastReadTags.ContainsKey(frame.TagID))
+                                    {
+                                        LastReadTags.Add(frame.TagID, DateTime.Now);
+                                        navegacao.SetLocal(frame.TagID);
+                                    }
+                                    else if (DateTime.Now.Subtract(LastReadTags[frame.TagID]).TotalSeconds >= 4)
+                                    {
+                                        LastReadTags[frame.TagID] = DateTime.Now;
+                                        navegacao.SetLocal(frame.TagID);
+                                    }
+
+                                    
 
                                 }
 
@@ -655,6 +733,13 @@ namespace GuideMe
         private void Button_Clicked(object sender, EventArgs e)
         {
             navegacao.CalcularRota("Luga3");
+        }
+
+        private void SwipeGestureRecognizer_Swiped_3(object sender, SwipedEventArgs e)
+        {
+            Console.WriteLine("Swipe Esquerda");
+            FilaGestos.Enqueue(new GestoSwipeEsquerda());
+            Console.WriteLine("Swipe Esquerda!");
         }
         //Swipe para direita
 

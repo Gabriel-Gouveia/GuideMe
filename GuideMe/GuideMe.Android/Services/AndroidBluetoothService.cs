@@ -45,6 +45,7 @@ namespace GuideMe.Droid
         }
 
         public event OnBluetoothScanTerminado OnBluetoothScanTerminado;
+        public event OnBluetoothDesconectado OnDesconectado;
 
         public AndroidBluetoothService()
         {
@@ -60,6 +61,21 @@ namespace GuideMe.Droid
                         Console.WriteLine($"Dispositivo encontrado! {dispositivoEncontrado.Device.Name}");
                 }
             };
+            _bluetoothAdapter.DeviceDisconnected -= _bluetoothAdapter_DeviceDisconnected1;
+            _bluetoothAdapter.DeviceDisconnected += _bluetoothAdapter_DeviceDisconnected1;
+            _bluetoothAdapter.DeviceConnectionLost -= _bluetoothAdapter_DeviceConnectionLost;
+            _bluetoothAdapter.DeviceConnectionLost += _bluetoothAdapter_DeviceConnectionLost;
+
+        }
+
+        private void _bluetoothAdapter_DeviceDisconnected1(object sender, Plugin.BLE.Abstractions.EventArgs.DeviceEventArgs e)
+        {
+           
+        }
+
+        private void _bluetoothAdapter_DeviceConnectionLost(object sender, Plugin.BLE.Abstractions.EventArgs.DeviceErrorEventArgs e)
+        {
+            
         }
 
         private bool VerificaSeBengala(IDevice device)
@@ -221,7 +237,14 @@ namespace GuideMe.Droid
                     {
                         var parametrosDeConexao = new ConnectParameters(false, true);
                         await _bluetoothAdapter.ConnectToDeviceAsync(device, parametrosDeConexao);
-                        return _bluetoothAdapter.ConnectedDevices.FirstOrDefault();
+                        _device= _bluetoothAdapter.ConnectedDevices.FirstOrDefault(x => x.Name == device.Name);
+                        if (_device != null)
+                        {
+                            _bluetoothAdapter.DeviceDisconnected -= _bluetoothAdapter_DeviceDisconnected;
+                            _bluetoothAdapter.DeviceDisconnected += _bluetoothAdapter_DeviceDisconnected;
+                        }
+
+                        return _device;
                         //var connectedDevice = _bluetoothAdapter.ConnectedDevices.FirstOrDefault();
                         //var connectedDevice = _bluetoothAdapter.ConnectedDevices.Where(d => d.Name == "ESP32-BLE-Server"); <-- alternativa
                         //var service = await connectedDevice.GetServiceAsync(Guid.Parse("4FAFC201-1FB5-459E-8FCC-C5C9C331914B"));
@@ -251,6 +274,11 @@ namespace GuideMe.Droid
             {
                 throw ex;
             }
+        }
+
+        private void _bluetoothAdapter_DeviceDisconnected(object sender, Plugin.BLE.Abstractions.EventArgs.DeviceEventArgs e)
+        {
+            OnDesconectado?.Invoke();
         }
 
         private async Task<IService> ObtemServicoBLEAsync(IDevice dispositivoConectado)

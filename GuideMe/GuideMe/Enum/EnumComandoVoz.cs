@@ -8,6 +8,7 @@ namespace GuideMe.Enum
     {
         TestarDispositivo,
         Irpara,
-        ListarLugares
+        ListarLugares,
+        OndeEstou
     }
 }

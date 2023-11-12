@@ -206,6 +206,21 @@ namespace GuideMe.STT
             return retorno;
 
         }
+        private static List<string> GetPatternsOndeEstou()
+        {         
+            List<string> retorno = new List<string>();
+            retorno.Add("Onde eu estou ?");
+            retorno.Add("Onde eu to ?");
+            retorno.Add("Aonde eu estou ?");
+            retorno.Add("Aonde eu to ?");
+            retorno.Add("Onde eu estou");
+            retorno.Add("Onde eu to");
+            retorno.Add("Aonde eu estou");
+            retorno.Add("Aonde eu to");
+
+            return retorno;
+
+        }
         public static void RegistrarLugares(List<string> lugares)
         {
 
@@ -215,6 +230,14 @@ namespace GuideMe.STT
             else
                 ComandosVoz.Add(EnumComandoVoz.Irpara, GetPatternsIrPara(lugares));
 
+        }
+        public static void RegistrarOndeEstou()
+        {
+            PreencheComandosVoz();
+            if (ComandosVoz.ContainsKey(EnumComandoVoz.OndeEstou))
+                ComandosVoz[EnumComandoVoz.OndeEstou] = GetPatternsOndeEstou();
+            else
+                ComandosVoz.Add(EnumComandoVoz.OndeEstou, GetPatternsOndeEstou());
         }
         static string NormalizarString(string text)
         {
@@ -344,10 +367,10 @@ namespace GuideMe.STT
                 {
                     await TTSHelper.Speak("Me diga o que você precisa");
 
-                    _ = Task.Factory.StartNew(_ => Listen(), TaskCreationOptions.LongRunning);
+                    _ = Task.Factory.StartNew(_ => Listen(), TaskCreationOptions.AttachedToParent);
 
                     Thread.Sleep(100);
-                    _ = Task.Factory.StartNew(_ => TimeOutListen(), TaskCreationOptions.LongRunning);
+                    _ = Task.Factory.StartNew(_ => TimeOutListen(), TaskCreationOptions.AttachedToParent);
                 }
                  
 
@@ -373,31 +396,6 @@ namespace GuideMe.STT
             IsTranscribbing = true;
             await recognizer.StartContinuousRecognitionAsync();
         }
-        private static async void Transcrever()
-        {
-            if (!MicEnabled)
-                MicEnabled = await micService.GetPermissionAsync();
-
-            // EARLY OUT: make sure mic is accessible
-            if (!MicEnabled)
-            {
-                _ = TTSHelper.Speak("Não possuo acesso ao microfone");
-                return;
-            }
-
-            // initialize speech recognizer 
-            if (recognizer == null)
-            {
-                var config = SpeechConfig.FromSubscription(SubscriptionKey, Region);
-                recognizer = new SpeechRecognizer(config, Language);
-                recognizer.Recognized += (obj, args) =>
-                {
-                    if (OnRecognizedSomething != null)
-                        OnRecognizedSomething.Invoke(obj, args);
-                };
-            }
-
-
-        }
+       
     }
 }

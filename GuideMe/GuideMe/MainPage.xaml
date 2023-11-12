@@ -36,6 +36,7 @@
             <SwipeGestureRecognizer Direction="Right" Swiped="SwipeGestureRecognizer_Swiped"></SwipeGestureRecognizer>
             <SwipeGestureRecognizer Direction="Down" Swiped="SwipeGestureRecognizer_Swiped_1"></SwipeGestureRecognizer>
             <SwipeGestureRecognizer Direction="Up" Swiped="SwipeGestureRecognizer_Swiped_2"></SwipeGestureRecognizer>
+            <SwipeGestureRecognizer Direction="Left" Swiped="SwipeGestureRecognizer_Swiped_3"/>
         </StackLayout.GestureRecognizers>
     </StackLayout>
     
